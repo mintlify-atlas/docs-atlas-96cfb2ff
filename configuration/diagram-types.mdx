@@ -1,9 +1,9 @@
 ---
 title: Diagram Types
-description: All 7 Mermaid diagram types supported by Omni Architect
+description: All 8 Mermaid diagram types supported by Omni Architect
 ---
 
-Omni Architect supports 7 different Mermaid diagram types, each serving a specific purpose in visualizing product logic. Configure which diagrams to generate using the `diagram_types` parameter.
+Omni Architect supports 8 different Mermaid diagram types, each serving a specific purpose in visualizing product logic. Configure which diagrams to generate using the `diagram_types` parameter.
 
 ## Configuration
 
@@ -14,6 +14,7 @@ diagram_types:
   - flowchart
   - sequence
   - erDiagram
+  - classDiagram
   - stateDiagram
   - C4Context
   - journey
@@ -22,7 +23,7 @@ diagram_types:
 
 ```bash CLI
 skills run omni-architect \
-  --diagram_types '["flowchart","sequence","erDiagram","stateDiagram","C4Context","journey","gantt"]' \
+  --diagram_types '["flowchart","sequence","erDiagram","classDiagram","stateDiagram","C4Context","journey","gantt"]' \
   # ... other parameters
 ```
 
@@ -159,7 +160,70 @@ erDiagram
 
 ---
 
-### 4. State Diagram (`stateDiagram`)
+### 4. Class Diagram (`classDiagram`)
+
+**Purpose**: Visualize object-oriented class structures and relationships
+
+**PRD Mapping**: Extracted from `entities` section with emphasis on behavior and methods
+
+**Use Cases**:
+- Object-oriented design
+- Class hierarchies and inheritance
+- Service layer architecture
+- Domain-driven design patterns
+
+**Example Output**:
+
+```mermaid
+classDiagram
+    class User {
+        +uuid id
+        +string email
+        +string name
+        +enum role
+        +login()
+        +logout()
+        +updateProfile()
+    }
+    
+    class Order {
+        +uuid id
+        +uuid userId
+        +enum status
+        +decimal total
+        +addItem()
+        +removeItem()
+        +checkout()
+        +cancel()
+    }
+    
+    class Product {
+        +uuid id
+        +string name
+        +decimal price
+        +int stock
+        +updateStock()
+        +getAvailability()
+    }
+    
+    class Cart {
+        +uuid id
+        +uuid userId
+        +array items
+        +addProduct()
+        +removeProduct()
+        +clear()
+    }
+    
+    User "1" --> "*" Order : places
+    User "1" --> "1" Cart : has
+    Cart "*" --> "*" Product : contains
+    Order "*" --> "*" Product : includes
+```
+
+---
+
+### 5. State Diagram (`stateDiagram`)
 
 **Purpose**: Represent state machines and feature states
 
@@ -190,7 +254,7 @@ stateDiagram-v2
 
 ---
 
-### 5. C4 Context Diagram (`C4Context`)
+### 6. C4 Context Diagram (`C4Context`)
 
 **Purpose**: High-level architectural overview
 
@@ -226,7 +290,7 @@ C4Context
 
 ---
 
-### 6. Journey Diagram (`journey`)
+### 7. Journey Diagram (`journey`)
 
 **Purpose**: Map user journey and experience
 
@@ -264,7 +328,7 @@ journey
 
 ---
 
-### 7. Gantt Chart (`gantt`)
+### 8. Gantt Chart (`gantt`)
 
 **Purpose**: Show roadmap and feature dependencies over time
 

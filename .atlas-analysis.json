@@ -107,7 +107,7 @@
   "keyFeatures": [
     "Multi-phase orchestration pipeline (PRD → Mermaid → Validation → Figma)",
     "Automated logic validation with 6-criteria scoring system",
-    "Support for 7 diagram types (flowchart, sequence, ER, state, C4, journey, gantt)",
+    "Support for 8 diagram types (flowchart, sequence, ER, class, state, C4, journey, gantt)",
     "Interactive, batch, and auto validation modes",
     "Figma asset generation with design system support (Material 3, Apple HIG, Tailwind)",
     "Extensible sub-skill architecture",
