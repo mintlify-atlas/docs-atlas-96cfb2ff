@@ -1,0 +1,128 @@
+{
+  "projectType": "framework",
+  "projectName": "Omni Architect",
+  "projectDescription": "Orchestration framework that transforms PRDs into validated Mermaid diagrams and Figma design assets through an intelligent multi-phase pipeline.",
+  "theme": "aspen",
+  "primaryColor": "#4A90D9",
+  "lightColor": "#11161e",
+  "darkColor": "#cfd0d2",
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Documentation",
+        "groups": [
+          {
+            "group": "Get Started",
+            "pages": [
+              "introduction",
+              "quickstart",
+              "installation"
+            ]
+          },
+          {
+            "group": "Core Concepts",
+            "pages": [
+              "concepts/overview",
+              "concepts/pipeline-architecture",
+              "concepts/skills-system",
+              "concepts/validation-scoring"
+            ]
+          },
+          {
+            "group": "Pipeline Phases",
+            "pages": [
+              "pipeline/prd-parser",
+              "pipeline/mermaid-generator",
+              "pipeline/logic-validator",
+              "pipeline/figma-generator",
+              "pipeline/asset-delivery"
+            ]
+          },
+          {
+            "group": "Configuration",
+            "pages": [
+              "configuration/overview",
+              "configuration/diagram-types",
+              "configuration/design-systems",
+              "configuration/validation-modes",
+              "configuration/design-tokens",
+              "configuration/hooks"
+            ]
+          },
+          {
+            "group": "Guides",
+            "pages": [
+              "guides/writing-prds",
+              "guides/validation-workflow",
+              "guides/figma-setup",
+              "guides/custom-design-systems",
+              "guides/troubleshooting"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "Skills Reference",
+        "groups": [
+          {
+            "group": "Core Skills",
+            "pages": [
+              "skills/prd-parse",
+              "skills/mermaid-gen",
+              "skills/logic-validate",
+              "skills/figma-gen",
+              "skills/asset-deliver"
+            ]
+          },
+          {
+            "group": "Dependencies",
+            "pages": [
+              "skills/external-dependencies"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "Examples",
+        "groups": [
+          {
+            "group": "Use Cases",
+            "pages": [
+              "examples/ecommerce-platform",
+              "examples/saas-application",
+              "examples/mobile-app"
+            ]
+          },
+          {
+            "group": "Advanced",
+            "pages": [
+              "examples/custom-workflows",
+              "examples/cicd-integration"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "keyFeatures": [
+    "Multi-phase orchestration pipeline (PRD → Mermaid → Validation → Figma)",
+    "Automated logic validation with 6-criteria scoring system",
+    "Support for 7 diagram types (flowchart, sequence, ER, state, C4, journey, gantt)",
+    "Interactive, batch, and auto validation modes",
+    "Figma asset generation with design system support (Material 3, Apple HIG, Tailwind)",
+    "Extensible sub-skill architecture",
+    "Configuration via YAML with custom design tokens and hooks"
+  ],
+  "publicApiSurface": [
+    "omni-architect.run(options)",
+    "skills/prd-parse - PRD Parser skill",
+    "skills/mermaid-gen - Mermaid Generator skill",
+    "skills/logic-validate - Logic Validator skill",
+    "skills/figma-gen - Figma Generator skill",
+    "skills/asset-deliver - Asset Delivery skill",
+    "CLI: skills run omni-architect",
+    "Configuration: .omni-architect.yml",
+    "Inputs: prd_source, project_name, figma_file_key, figma_access_token, diagram_types, design_system, validation_mode, validation_threshold, locale",
+    "Outputs: parsed_prd, mermaid_diagrams, validation_report, figma_assets, orchestration_log"
+  ]
+}
