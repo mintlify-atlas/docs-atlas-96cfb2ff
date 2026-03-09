@@ -1,0 +1,515 @@
+---
+title: Validation Workflow
+description: How to effectively use interactive, batch, and auto validation modes to ensure diagram quality
+---
+
+# Validation Workflow
+
+After Omni Architect generates Mermaid diagrams from your PRD (Phase 2), the Logic Validator (Phase 3) analyzes them for coherence and completeness. Understanding the three validation modes helps you balance speed and quality.
+
+## Validation Overview
+
+The Logic Validator calculates a weighted score across six criteria:
+
+| Criterion | Weight | Description |
+|-----------|--------|-------------|
+| **Coverage** | 25% | % of features/stories represented in diagrams |
+| **Consistency** | 25% | Entities and flows consistent across diagrams |
+| **Completeness** | 20% | All paths (happy/sad) represented |
+| **Traceability** | 15% | Diagram ↔ PRD requirement mapping |
+| **Naming Coherence** | 10% | Consistent naming across diagrams |
+| **Dependency Integrity** | 5% | Feature dependencies respected |
+
+**Final Score Formula:**
+
+```
+score_final = Σ (score_criterion × weight_criterion)
+```
+
+Scores range from 0.0 (poor) to 1.0 (perfect).
+
+## The Three Validation Modes
+
+### Interactive Mode (Default)
+
+**Best for:** First-time use, learning, critical projects
+
+**How it works:**
+
+1. Each diagram is presented individually with its score
+2. You review the diagram and score breakdown
+3. You choose: `approve`, `reject`, or `modify`
+4. If `modify`: provide feedback, system regenerates that specific diagram
+5. Process repeats until all diagrams are approved
+
+**Example session:**
+
+```bash
+skills run omni-architect \
+  --prd_source "./prd.md" \
+  --project_name "My App" \
+  --figma_file_key "abc123" \
+  --figma_access_token "$TOKEN" \
+  --validation_mode "interactive"
+```
+
+**Output:**
+
+```
+╔══════════════════════════════════════════════════════════╗
+║ Diagram 1/5: Flowchart - Checkout Flow                  ║
+╚══════════════════════════════════════════════════════════╝
+
+Score: 0.92 ✓
+
+Breakdown:
+  Coverage:     0.95 (19/20 features covered)
+  Consistency:  0.88 (Payment entity divergence)
+  Completeness: 0.90 (Missing sad path: Password Reset)
+  Traceability: 0.93 (All except US018)
+  Naming:       0.92 ("User" vs "Usuário" inconsistency)
+  Dependencies: 0.98
+
+Warnings:
+  - Payment entity uses different attributes in ER vs Sequence
+  - User story US018 not visually represented
+
+[a]pprove  [r]eject  [m]odify  [v]iew code
+> 
+```
+
+<Tip>
+Use interactive mode for your first run to understand what the validator looks for. This calibrates your expectations before using auto mode.
+</Tip>
+
+#### When to Approve
+
+- Score ≥ 0.85
+- Warnings are minor (e.g., naming inconsistencies)
+- Critical paths are fully represented
+
+#### When to Reject
+
+- Score < 0.75
+- Missing critical flows or entities
+- Major inconsistencies between diagrams
+
+#### When to Modify
+
+- Score is borderline (0.75-0.84)
+- Specific fixable issues identified
+- You want to iterate on a particular diagram
+
+**Example modification:**
+
+```
+> m
+Provide feedback: Add the password reset sad path to the authentication flow
+
+Regenerating diagram with your feedback...
+✓ Updated diagram generated
+
+╔══════════════════════════════════════════════════════════╗
+║ Diagram 1/5: Flowchart - Checkout Flow (Updated)        ║
+╚══════════════════════════════════════════════════════════╝
+
+Score: 0.96 ✓ (+0.04)
+
+[a]pprove  [r]eject  [m]odify  [v]iew code
+> a
+
+✓ Diagram approved. Moving to next...
+```
+
+---
+
+### Batch Mode
+
+**Best for:** Reviewing all diagrams before making decisions, team reviews
+
+**How it works:**
+
+1. All diagrams are generated
+2. A consolidated report is presented
+3. You review all diagrams and scores together
+4. You choose: `approve_all`, `reject_all`, or `select`
+5. If `select`: individually approve/reject specific diagrams
+
+**Example session:**
+
+```bash
+skills run omni-architect \
+  --validation_mode "batch"
+```
+
+**Output:**
+
+```
+╔══════════════════════════════════════════════════════════╗
+║ Validation Report - All Diagrams                         ║
+╚══════════════════════════════════════════════════════════╝
+
+Overall Score: 0.89 ✓
+
+Diagram Breakdown:
+  1. Flowchart - Checkout         [0.92] ✓
+  2. Sequence - User Registration [0.88] ✓
+  3. ER Diagram - Domain Model    [0.91] ✓
+  4. State - Order Lifecycle      [0.87] ✓
+  5. C4 Context - System Overview [0.85] ✓
+
+Common Issues:
+  - Inconsistent naming ("User" vs "Usuário") across 3 diagrams
+  - Payment entity attributes diverge between ER and Sequence
+  - User story US018 not represented
+
+Suggestions:
+  - Standardize to "User" in all diagrams
+  - Align Payment entity schema
+  - Add US018 to authentication flowchart
+
+[a]pprove all  [r]eject all  [s]elect  [e]xport report
+> 
+```
+
+#### Select Mode
+
+```
+> s
+
+Select diagrams to approve (space to toggle, enter to confirm):
+
+[✓] 1. Flowchart - Checkout         [0.92]
+[✓] 2. Sequence - User Registration [0.88]
+[✓] 3. ER Diagram - Domain Model    [0.91]
+[ ] 4. State - Order Lifecycle      [0.87]  ← needs revision
+[✓] 5. C4 Context - System Overview [0.85]
+
+4 diagrams approved, 1 will be regenerated.
+Provide feedback for rejected diagrams...
+```
+
+<Tip>
+Batch mode is ideal when collaborating with a team. Export the report (`[e]xport report`) and share it for review before making decisions.
+</Tip>
+
+---
+
+### Auto Mode
+
+**Best for:** CI/CD pipelines, rapid iteration, trusted PRD quality
+
+**How it works:**
+
+1. All diagrams are generated
+2. Each diagram's score is compared to `validation_threshold`
+3. If score ≥ threshold: APPROVED automatically
+4. If score < threshold: REJECTED, feedback report generated
+5. No human intervention required
+
+**Configuration:**
+
+```bash
+skills run omni-architect \
+  --validation_mode "auto" \
+  --validation_threshold 0.85
+```
+
+**Example output:**
+
+```
+╔══════════════════════════════════════════════════════════╗
+║ Auto Validation - Threshold: 0.85                        ║
+╚══════════════════════════════════════════════════════════╝
+
+Processing 5 diagrams...
+
+✓ Flowchart - Checkout         [0.92] APPROVED
+✓ Sequence - User Registration [0.88] APPROVED
+✓ ER Diagram - Domain Model    [0.91] APPROVED
+✓ State - Order Lifecycle      [0.87] APPROVED
+✓ C4 Context - System Overview [0.85] APPROVED (threshold)
+
+Result: 5/5 diagrams approved
+Overall Score: 0.89
+
+Proceeding to Phase 4: Figma Generation...
+```
+
+#### Handling Rejections in Auto Mode
+
+If any diagram scores below threshold:
+
+```
+✓ Flowchart - Checkout         [0.92] APPROVED
+✗ Sequence - User Registration [0.78] REJECTED
+✓ ER Diagram - Domain Model    [0.91] APPROVED
+
+Result: 2/3 diagrams approved, 1 rejected
+
+╔══════════════════════════════════════════════════════════╗
+║ Rejection Report                                          ║
+╚══════════════════════════════════════════════════════════╝
+
+Diagram: Sequence - User Registration
+Score: 0.78 (threshold: 0.85)
+
+Issues:
+  - Low completeness (0.65): Missing error handling flows
+  - Low traceability (0.70): US003, US007 not mapped
+
+Suggestions:
+  - Add error flows for failed registration scenarios
+  - Map US003 (Email Verification) and US007 (Duplicate Email)
+  - Include system-to-system interactions (Auth Service → Email Service)
+
+Pipeline halted. Fix the PRD and re-run.
+```
+
+<Warning>
+In auto mode, a single diagram scoring below threshold will halt the entire pipeline. This is a safety mechanism to prevent low-quality diagrams from reaching Figma generation.
+</Warning>
+
+---
+
+## Choosing the Right Mode
+
+<Steps>
+  <Step title="First-time or critical project">
+    Use **interactive mode** to review each diagram individually and learn what the validator expects.
+  </Step>
+  <Step title="Team review or documentation">
+    Use **batch mode** to generate a consolidated report for stakeholder review.
+  </Step>
+  <Step title="Trusted workflow or CI/CD">
+    Use **auto mode** with a calibrated threshold (typically 0.85) for hands-free validation.
+  </Step>
+</Steps>
+
+## Setting the Right Threshold
+
+The `validation_threshold` parameter (0.0 - 1.0) determines what's acceptable in auto mode.
+
+| Threshold | When to Use | Trade-off |
+|-----------|-------------|----------|
+| **0.95+** | Mission-critical projects, regulatory compliance | Very strict, may require multiple iterations |
+| **0.85-0.94** | Production projects, standard quality | **Recommended default** - balanced |
+| **0.75-0.84** | Prototypes, early-stage exploration | Faster iteration, may miss issues |
+| **< 0.75** | Not recommended | High risk of incoherent diagrams |
+
+<Tip>
+Run interactive mode once to see typical scores for your PRD style, then set your auto threshold slightly below your average score.
+</Tip>
+
+**Example calibration workflow:**
+
+```bash
+# Step 1: Run interactive to see scores
+skills run omni-architect --validation_mode "interactive" > scores.txt
+
+# Observe typical scores: 0.88, 0.91, 0.89, 0.87, 0.90
+# Average: ~0.89
+
+# Step 2: Set threshold slightly below average for future runs
+skills run omni-architect \
+  --validation_mode "auto" \
+  --validation_threshold 0.85
+```
+
+---
+
+## Understanding the Validation Report
+
+All modes generate a detailed JSON report. Here's how to interpret it:
+
+```json
+{
+  "overall_score": 0.91,
+  "status": "approved",
+  "breakdown": {
+    "coverage": {
+      "score": 0.95,
+      "weight": 0.25,
+      "details": "19/20 features covered",
+      "missing": ["Feature: Admin Dashboard (F020)"]
+    },
+    "consistency": {
+      "score": 0.88,
+      "weight": 0.25,
+      "details": "Entity divergence detected",
+      "issues": [
+        {
+          "entity": "Payment",
+          "diagrams": ["ER Diagram", "Sequence Diagram"],
+          "discrepancy": "ER has 'amount' (decimal), Sequence uses 'total' (string)"
+        }
+      ]
+    },
+    "completeness": {
+      "score": 0.90,
+      "weight": 0.20,
+      "details": "Missing sad paths",
+      "missing_paths": [
+        {
+          "flow": "Password Reset",
+          "missing": "Invalid token scenario"
+        }
+      ]
+    },
+    "traceability": {
+      "score": 0.93,
+      "weight": 0.15,
+      "details": "Good PRD mapping",
+      "unmapped": ["US018"]
+    },
+    "naming_coherence": {
+      "score": 0.92,
+      "weight": 0.10,
+      "details": "Minor inconsistencies",
+      "issues": ["'User' vs 'Usuário' in 2 diagrams"]
+    },
+    "dependency_integrity": {
+      "score": 0.98,
+      "weight": 0.05,
+      "details": "All dependencies respected"
+    }
+  },
+  "warnings": [
+    "Payment entity schema diverges between ER and Sequence diagrams",
+    "User story US018 not visually represented"
+  ],
+  "suggestions": [
+    "Standardize naming: use 'User' consistently",
+    "Add error flow for invalid token in Password Reset",
+    "Map US018 to authentication flowchart"
+  ]
+}
+```
+
+### Key Fields
+
+- **overall_score**: Weighted average of all criteria
+- **status**: `approved`, `rejected`, or `pending`
+- **breakdown**: Detailed scores per criterion with specific issues
+- **warnings**: Non-blocking issues that should be reviewed
+- **suggestions**: Actionable improvements
+
+---
+
+## Configuration in .omni-architect.yml
+
+Persist validation settings in your project config:
+
+```yaml
+# .omni-architect.yml
+validation_mode: "auto"
+validation_threshold: 0.85
+
+# Optional: Custom criterion weights
+validation_weights:
+  coverage: 0.30          # Increase coverage importance
+  consistency: 0.25
+  completeness: 0.20
+  traceability: 0.15
+  naming_coherence: 0.05  # Decrease naming importance
+  dependency_integrity: 0.05
+```
+
+---
+
+## Validation in CI/CD
+
+Integrate Omni Architect validation in your CI pipeline:
+
+```yaml
+# .github/workflows/validate-prd.yml
+name: Validate PRD
+
+on:
+  pull_request:
+    paths:
+      - 'docs/prd/**/*.md'
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Run Omni Architect Validation
+        run: |
+          npx skills run omni-architect \
+            --prd_source "./docs/prd/feature-x.md" \
+            --project_name "${{ github.event.repository.name }}" \
+            --figma_file_key "${{ secrets.FIGMA_FILE_KEY }}" \
+            --figma_access_token "${{ secrets.FIGMA_TOKEN }}" \
+            --validation_mode "auto" \
+            --validation_threshold 0.85
+      
+      - name: Upload Validation Report
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: validation-report
+          path: .omni-architect/validation-report.json
+```
+
+<Tip>
+Use auto mode with a threshold of 0.85 in CI/CD to block PRs with low-quality PRDs. This ensures only validated requirements reach design.
+</Tip>
+
+---
+
+## Troubleshooting Low Scores
+
+### Coverage Score < 0.85
+
+**Cause:** Not all features/stories are represented in diagrams.
+
+**Solution:** Add more detail to your PRD. Ensure every feature has:
+- User stories
+- Flows with numbered steps
+- Entities with attributes
+
+### Consistency Score < 0.85
+
+**Cause:** Entities or flows are inconsistent across diagrams.
+
+**Solution:** 
+- Use the exact same entity names everywhere
+- Keep attribute names consistent
+- Review ER Diagram vs Sequence Diagram entity usage
+
+### Completeness Score < 0.85
+
+**Cause:** Missing error paths or sad paths.
+
+**Solution:** Document all scenarios:
+```markdown
+3. System processes payment
+   - If approved → Create order
+   - If declined → Show error, return to payment
+   - If timeout → Retry (max 3x), then show error
+```
+
+### Traceability Score < 0.85
+
+**Cause:** User stories or requirements aren't mapped to diagrams.
+
+**Solution:** Reference user stories in your flows:
+```markdown
+## Checkout Flow (implements US003, US007, US012)
+```
+
+---
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Writing PRDs" icon="pen" href="/guides/writing-prds">
+    Learn how to write PRDs that score well
+  </Card>
+  <Card title="Troubleshooting" icon="wrench" href="/guides/troubleshooting">
+    Common validation issues and solutions
+  </Card>
+</CardGroup>

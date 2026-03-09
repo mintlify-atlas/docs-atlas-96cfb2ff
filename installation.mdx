@@ -1,0 +1,405 @@
+---
+title: Installation
+description: Install Omni Architect and configure your environment
+---
+
+Learn how to install Omni Architect and set up your development environment.
+
+## System Requirements
+
+Before installing Omni Architect, ensure your system meets these requirements:
+
+<CardGroup cols={2}>
+
+<Card title="Node.js" icon="node-js">
+  Version 18.0.0 or higher required
+</Card>
+
+<Card title="Figma Account" icon="figma">
+  Active account with edit permissions
+</Card>
+
+<Card title="Package Manager" icon="box">
+  npm 5.2+, yarn, or pnpm
+</Card>
+
+<Card title="Figma Token" icon="key">
+  Personal access token with write permissions
+</Card>
+
+</CardGroup>
+
+## Installation Methods
+
+<Tabs>
+
+<Tab title="npm">
+
+### Install via skills CLI (Recommended)
+
+```bash
+npx skills add https://github.com/fabioeloi/omni-architect --skill omni-architect
+```
+
+This automatically installs the orchestrated dependencies:
+- `mermaid-diagrams` from softaworks/agent-toolkit
+- `figma` from hoodini/ai-agents-skills
+- `prd-generator` from jamesrochabrun/skills
+- `frontend-design` from anthropics/skills
+
+### Install dependencies manually
+
+If you prefer to install skills individually:
+
+```bash
+npx skills add https://github.com/softaworks/agent-toolkit --skill mermaid-diagrams
+npx skills add https://github.com/hoodini/ai-agents-skills --skill figma
+npx skills add https://github.com/jamesrochabrun/skills --skill prd-generator
+npx skills add https://github.com/anthropics/skills --skill frontend-design
+```
+
+</Tab>
+
+<Tab title="yarn">
+
+### Install via skills CLI
+
+```bash
+yarn dlx skills add https://github.com/fabioeloi/omni-architect --skill omni-architect
+```
+
+### Verify installation
+
+```bash
+yarn skills list | grep omni-architect
+```
+
+</Tab>
+
+<Tab title="pnpm">
+
+### Install via skills CLI
+
+```bash
+pnpm dlx skills add https://github.com/fabioeloi/omni-architect --skill omni-architect
+```
+
+### Verify installation
+
+```bash
+pnpm skills list | grep omni-architect
+```
+
+</Tab>
+
+<Tab title="Git Clone">
+
+### Clone and install locally
+
+For development or contributing:
+
+```bash
+# Clone the repository
+git clone https://github.com/fabioeloi/omni-architect.git
+cd omni-architect
+
+# Install dependencies
+npm install
+
+# Run tests
+npm test
+
+# Run example
+npm run example
+```
+
+</Tab>
+
+</Tabs>
+
+## Getting Your Figma Access Token
+
+Omni Architect requires a Figma personal access token to generate design assets.
+
+<Steps>
+
+<Step title="Log in to Figma">
+Go to [figma.com](https://www.figma.com) and sign in to your account.
+</Step>
+
+<Step title="Access Settings">
+Click your profile icon in the top-right corner and select **Settings**.
+</Step>
+
+<Step title="Generate Token">
+1. Scroll to the **Personal access tokens** section
+2. Click **Create new token**
+3. Give it a descriptive name (e.g., "Omni Architect")
+4. Select the required scopes:
+   - **File content** (Read and write)
+   - **File comments** (optional)
+
+<Warning>
+Keep your token secure and never commit it to version control!
+</Warning>
+
+</Step>
+
+<Step title="Copy and Store">
+Copy the generated token and store it securely. You won't be able to see it again.
+
+```bash
+# Set as environment variable (recommended)
+export FIGMA_TOKEN="figd_your_token_here"
+
+# Or add to your shell profile (~/.bashrc, ~/.zshrc)
+echo 'export FIGMA_TOKEN="figd_your_token_here"' >> ~/.zshrc
+```
+
+</Step>
+
+</Steps>
+
+<Note>
+Figma tokens start with `figd_` and have write permissions by default. Learn more in the [Figma API documentation](https://www.figma.com/developers/api#access-tokens).
+</Note>
+
+## Finding Your Figma File Key
+
+The file key is required to specify where assets should be generated.
+
+```
+Figma URL structure:
+https://www.figma.com/file/<FILE_KEY>/Project-Name
+                            ^^^^^^^^^
+                         This is your file key
+```
+
+**Example:**
+```
+URL: https://www.figma.com/file/abc123XYZ/My-Design-System
+File Key: abc123XYZ
+```
+
+## Verifying Installation
+
+Confirm everything is set up correctly:
+
+<Steps>
+
+<Step title="Check Node.js version">
+
+```bash
+node --version
+# Should output v18.0.0 or higher
+```
+
+</Step>
+
+<Step title="Verify skill installation">
+
+```bash
+skills list | grep omni-architect
+# Should show: omni-architect@1.0.0
+```
+
+</Step>
+
+<Step title="Test Figma connection">
+
+```bash
+# Test your Figma token
+curl -H "X-Figma-Token: $FIGMA_TOKEN" \
+  https://api.figma.com/v1/me
+# Should return your user info
+```
+
+</Step>
+
+<Step title="Run validation">
+
+```bash
+# Navigate to omni-architect directory (if cloned)
+cd omni-architect
+npm run validate
+
+# Should output: ✓ All validations passed
+```
+
+</Step>
+
+</Steps>
+
+## Configuration File (Optional)
+
+Create a persistent configuration file to avoid passing parameters every time:
+
+```bash
+# Create .omni-architect.yml in your project root
+touch .omni-architect.yml
+```
+
+Add your default settings:
+
+```yaml .omni-architect.yml
+project_name: "My Project"
+figma_file_key: "abc123XYZ"
+design_system: "material-3"
+locale: "pt-BR"
+validation_mode: "interactive"
+validation_threshold: 0.85
+
+diagram_types:
+  - flowchart
+  - sequence
+  - erDiagram
+  - stateDiagram
+  - C4Context
+
+design_tokens:
+  colors:
+    primary: "#4A90D9"
+    secondary: "#7B68EE"
+    success: "#2ECC71"
+    error: "#E74C3C"
+  typography:
+    font_family: "Inter"
+    heading_size: 24
+    body_size: 14
+  spacing:
+    base: 8
+    scale: 1.5
+```
+
+<Note>
+With a config file, you can run: `skills run omni-architect --prd_source "./prd.md"` without specifying other parameters.
+</Note>
+
+## Environment Variables
+
+Supported environment variables for configuration:
+
+| Variable | Description | Required |
+|----------|-------------|----------|
+| `FIGMA_TOKEN` | Your Figma personal access token | Yes |
+| `FIGMA_FILE_KEY` | Default Figma file key | No |
+| `OMNI_LOCALE` | Default locale (pt-BR, en-US, etc.) | No |
+| `OMNI_VALIDATION_MODE` | Default validation mode | No |
+
+## Troubleshooting
+
+<AccordionGroup>
+
+<Accordion title="Node version error">
+
+If you see `Error: Node.js 18.0.0 or higher is required`:
+
+```bash
+# Install Node.js 18+ using nvm
+curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.0/install.sh | bash
+nvm install 18
+nvm use 18
+```
+
+</Accordion>
+
+<Accordion title="Skill not found">
+
+If `skills` command is not found:
+
+```bash
+# Install skills CLI globally
+npm install -g @skills-sh/cli
+
+# Verify installation
+skills --version
+```
+
+</Accordion>
+
+<Accordion title="Figma API 401 Unauthorized">
+
+If you get authentication errors:
+
+1. Verify your token is correctly set: `echo $FIGMA_TOKEN`
+2. Check token hasn't expired in Figma settings
+3. Ensure token has **write permissions**
+4. Regenerate token if necessary
+
+</Accordion>
+
+<Accordion title="Figma API 403 Forbidden">
+
+If you can't write to the Figma file:
+
+1. Verify you have **edit permissions** on the file
+2. Check the file key is correct
+3. Ensure you're not using a view-only link
+4. Try creating a new file and using its key
+
+</Accordion>
+
+<Accordion title="Installation hangs or times out">
+
+If installation is taking too long:
+
+```bash
+# Clear npm cache
+npm cache clean --force
+
+# Try with verbose output
+npx skills add https://github.com/fabioeloi/omni-architect --skill omni-architect --verbose
+
+# Or use git clone method instead
+git clone https://github.com/fabioeloi/omni-architect.git
+```
+
+</Accordion>
+
+</AccordionGroup>
+
+## Uninstallation
+
+To remove Omni Architect:
+
+```bash
+# Remove the skill
+skills remove omni-architect
+
+# Remove configuration file
+rm .omni-architect.yml
+
+# Revoke Figma token (optional)
+# Go to Figma Settings > Personal access tokens > Delete
+```
+
+## Next Steps
+
+<CardGroup cols={2}>
+
+<Card title="Quickstart Guide" icon="rocket" href="/quickstart">
+  Run your first PRD transformation in 5 minutes
+</Card>
+
+<Card title="Configuration" icon="sliders" href="/configuration/overview">
+  Customize diagram types and validation settings
+</Card>
+
+<Card title="Pipeline Phases" icon="diagram-project" href="/pipeline/prd-parser">
+  Learn about each phase of the pipeline
+</Card>
+
+<Card title="Examples" icon="book" href="/examples/ecommerce-platform">
+  Explore real-world PRD examples
+</Card>
+
+</CardGroup>
+
+## Getting Help
+
+If you encounter issues:
+
+- Check the [Troubleshooting](#troubleshooting) section above
+- Review [GitHub Issues](https://github.com/fabioeloi/omni-architect/issues)
+- Join the discussion on [skills.sh](https://skills.sh/fabioeloi/omni-architect)
+- Read the [SKILL.md specification](https://github.com/fabioeloi/omni-architect/blob/main/SKILL.md)

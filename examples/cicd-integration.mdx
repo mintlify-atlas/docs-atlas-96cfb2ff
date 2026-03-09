@@ -1,0 +1,682 @@
+---
+title: 'CI/CD Integration'
+description: 'Automate Omni Architect in GitHub Actions, GitLab CI, and Jenkins'
+icon: 'gears'
+---
+
+## Overview
+
+Integrate Omni Architect into your continuous integration pipeline to automatically validate PRDs, generate diagrams, and create Figma assets whenever product requirements change.
+
+## Benefits
+
+<CardGroup cols={2}>
+  <Card title="Automated Validation" icon="circle-check">
+    Every PRD commit triggers validation, catching issues early.
+  </Card>
+  <Card title="Version Control" icon="code-branch">
+    Diagrams and design artifacts tracked alongside code.
+  </Card>
+  <Card title="Team Notifications" icon="bell">
+    Automatic alerts when new designs are ready for review.
+  </Card>
+  <Card title="Consistent Quality" icon="star">
+    Enforce validation thresholds before merging PRs.
+  </Card>
+</CardGroup>
+
+## GitHub Actions
+
+### Basic Workflow
+
+Create `.github/workflows/omni-architect.yml`:
+
+```yaml .github/workflows/omni-architect.yml
+name: Omni Architect Pipeline
+
+on:
+  push:
+    paths:
+      - 'docs/prd/**/*.md'
+  pull_request:
+    paths:
+      - 'docs/prd/**/*.md'
+
+jobs:
+  generate-designs:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+      
+      - name: Install Omni Architect
+        run: |
+          npx skills add https://github.com/fabioeloi/omni-architect --skill omni-architect
+      
+      - name: Run Omni Architect
+        env:
+          FIGMA_ACCESS_TOKEN: ${{ secrets.FIGMA_TOKEN }}
+        run: |
+          skills run omni-architect \
+            --prd_source "./docs/prd/feature-checkout.md" \
+            --project_name "E-Commerce Platform" \
+            --figma_file_key "${{ secrets.FIGMA_FILE_KEY }}" \
+            --figma_access_token "$FIGMA_ACCESS_TOKEN" \
+            --validation_mode "auto" \
+            --validation_threshold 0.85
+      
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: design-artifacts
+          path: |
+            output/diagrams/
+            output/validation-report.json
+            output/orchestration.log
+      
+      - name: Comment on PR
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const fs = require('fs');
+            const report = JSON.parse(fs.readFileSync('output/validation-report.json', 'utf8'));
+            
+            const comment = `## 🏗️ Omni Architect Results
+            
+            **Validation Score:** ${report.overall_score.toFixed(2)}
+            **Status:** ${report.status === 'approved' ? '✅ Approved' : '❌ Rejected'}
+            
+            ### Breakdown
+            - Coverage: ${report.breakdown.coverage.score.toFixed(2)}
+            - Consistency: ${report.breakdown.consistency.score.toFixed(2)}
+            - Completeness: ${report.breakdown.completeness.score.toFixed(2)}
+            
+            [View Figma Assets](https://www.figma.com/file/${{ secrets.FIGMA_FILE_KEY }})`;
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: comment
+            });
+```
+
+### Advanced Workflow with Hooks
+
+Use hooks for comprehensive automation:
+
+<CodeGroup>
+```yaml .github/workflows/omni-architect-advanced.yml
+name: Omni Architect Advanced
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'docs/prd/**/*.md'
+
+jobs:
+  design-pipeline:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v3
+      
+      - uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+      
+      - name: Install dependencies
+        run: |
+          npm install -g @skills/cli
+          npm install
+      
+      - name: Configure hooks
+        run: |
+          # Hooks will run during pipeline
+          cat > .omni-architect.yml <<EOF
+          project_name: "${{ github.event.repository.name }}"
+          figma_file_key: "${{ secrets.FIGMA_FILE_KEY }}"
+          validation_mode: "auto"
+          validation_threshold: 0.88
+          
+          hooks:
+            on_validation_approved: "npm run generate:specs"
+            on_figma_complete: "bash scripts/notify-team.sh"
+            on_asset_deliver: "bash scripts/commit-artifacts.sh"
+            on_error: "bash scripts/alert-team.sh"
+          EOF
+      
+      - name: Run Omni Architect
+        env:
+          FIGMA_ACCESS_TOKEN: ${{ secrets.FIGMA_TOKEN }}
+          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          skills run omni-architect \
+            --prd_source "$(git diff --name-only HEAD~1 | grep 'docs/prd' | head -1)" \
+            --figma_access_token "$FIGMA_ACCESS_TOKEN"
+      
+      - name: Create release tag
+        if: success()
+        run: |
+          VERSION=$(date +%Y%m%d-%H%M%S)
+          git tag "designs-v$VERSION"
+          git push origin "designs-v$VERSION"
+```
+
+```bash scripts/notify-team.sh
+#!/bin/bash
+set -e
+
+FIGMA_URL="https://www.figma.com/file/$FIGMA_FILE_KEY"
+REPO_URL="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY"
+COMMIT_SHA="${GITHUB_SHA:0:7}"
+
+curl -X POST "$SLACK_WEBHOOK" \
+  -H 'Content-Type: application/json' \
+  -d @- <<EOF
+{
+  "text": "🎨 New designs generated from PRD",
+  "blocks": [
+    {
+      "type": "section",
+      "text": {
+        "type": "mrkdwn",
+        "text": "*New Figma assets ready*\\nGenerated from commit \\`$COMMIT_SHA\\`"
+      }
+    },
+    {
+      "type": "actions",
+      "elements": [
+        {
+          "type": "button",
+          "text": { "type": "plain_text", "text": "View Figma" },
+          "url": "$FIGMA_URL"
+        },
+        {
+          "type": "button",
+          "text": { "type": "plain_text", "text": "View Commit" },
+          "url": "$REPO_URL/commit/$GITHUB_SHA"
+        }
+      ]
+    }
+  ]
+}
+EOF
+
+echo "✓ Slack notification sent"
+```
+
+```bash scripts/commit-artifacts.sh
+#!/bin/bash
+set -e
+
+git config user.name "Omni Architect Bot"
+git config user.email "bot@example.com"
+
+# Commit generated diagrams
+git add output/diagrams/ output/*.json
+git commit -m "chore: update design artifacts [skip ci]
+
+Generated by Omni Architect
+Validation score: $VALIDATION_SCORE
+Commit: $GITHUB_SHA"
+
+git push origin main
+
+echo "✓ Artifacts committed"
+```
+</CodeGroup>
+
+### Workflow Result
+
+When triggered, you'll see:
+
+```
+✓ PRD parsed (score: 0.87)
+✓ 5 Mermaid diagrams generated
+✓ Validation passed (score: 0.91)
+✓ Figma assets created (12 frames)
+✓ Slack notification sent
+✓ Artifacts committed to main
+```
+
+## GitLab CI
+
+Create `.gitlab-ci.yml`:
+
+```yaml .gitlab-ci.yml
+stages:
+  - validate
+  - generate
+  - notify
+
+variables:
+  PRD_PATH: "docs/prd/feature-checkout.md"
+
+validate-prd:
+  stage: validate
+  image: node:18
+  script:
+    - npm install -g @skills/cli
+    - |
+      skills run omni-architect \
+        --prd_source "$PRD_PATH" \
+        --project_name "$CI_PROJECT_NAME" \
+        --figma_file_key "$FIGMA_FILE_KEY" \
+        --figma_access_token "$FIGMA_ACCESS_TOKEN" \
+        --validation_mode "auto" \
+        --validation_threshold 0.85
+  artifacts:
+    paths:
+      - output/
+    expire_in: 30 days
+  only:
+    changes:
+      - docs/prd/**/*.md
+
+generate-specs:
+  stage: generate
+  image: node:18
+  script:
+    - npm run generate:api-specs
+  dependencies:
+    - validate-prd
+  only:
+    changes:
+      - docs/prd/**/*.md
+
+notify-team:
+  stage: notify
+  image: curlimages/curl:latest
+  script:
+    - |
+      curl -X POST "$SLACK_WEBHOOK" \
+        -H 'Content-Type: application/json' \
+        -d '{"text": "🎨 New designs ready in Figma!"}'
+  dependencies:
+    - validate-prd
+  only:
+    - main
+```
+
+## Jenkins
+
+Create `Jenkinsfile`:
+
+```groovy Jenkinsfile
+pipeline {
+    agent {
+        docker {
+            image 'node:18'
+        }
+    }
+    
+    environment {
+        FIGMA_ACCESS_TOKEN = credentials('figma-token')
+        FIGMA_FILE_KEY = credentials('figma-file-key')
+        SLACK_WEBHOOK = credentials('slack-webhook')
+    }
+    
+    stages {
+        stage('Install') {
+            steps {
+                sh 'npm install -g @skills/cli'
+            }
+        }
+        
+        stage('Run Omni Architect') {
+            when {
+                changeset "docs/prd/**/*.md"
+            }
+            steps {
+                script {
+                    def prdFiles = sh(
+                        script: 'git diff --name-only HEAD~1 | grep "docs/prd" || true',
+                        returnStdout: true
+                    ).trim().split('\n')
+                    
+                    for (prdFile in prdFiles) {
+                        if (prdFile) {
+                            sh """
+                                skills run omni-architect \
+                                    --prd_source "${prdFile}" \
+                                    --project_name "${env.JOB_NAME}" \
+                                    --figma_file_key "${env.FIGMA_FILE_KEY}" \
+                                    --figma_access_token "${env.FIGMA_ACCESS_TOKEN}" \
+                                    --validation_mode "auto" \
+                                    --validation_threshold 0.85
+                            """
+                        }
+                    }
+                }
+            }
+        }
+        
+        stage('Archive Artifacts') {
+            steps {
+                archiveArtifacts artifacts: 'output/**/*', fingerprint: true
+            }
+        }
+        
+        stage('Notify') {
+            steps {
+                sh '''
+                    curl -X POST "$SLACK_WEBHOOK" \
+                        -H 'Content-Type: application/json' \
+                        -d '{"text": "🎨 Omni Architect completed for " + env.JOB_NAME + "#" + env.BUILD_NUMBER}'
+                '''
+            }
+        }
+    }
+    
+    post {
+        failure {
+            sh '''
+                curl -X POST "$SLACK_WEBHOOK" \
+                    -H 'Content-Type: application/json' \
+                    -d '{"text": "❌ Omni Architect failed: " + env.BUILD_URL}'
+            '''
+        }
+    }
+}
+```
+
+## CircleCI
+
+Create `.circleci/config.yml`:
+
+```yaml .circleci/config.yml
+version: 2.1
+
+orbs:
+  node: circleci/node@5.0
+
+jobs:
+  omni-architect:
+    docker:
+      - image: cimg/node:18.0
+    steps:
+      - checkout
+      
+      - run:
+          name: Install Omni Architect
+          command: npm install -g @skills/cli
+      
+      - run:
+          name: Run pipeline
+          command: |
+            skills run omni-architect \
+              --prd_source "docs/prd/feature-checkout.md" \
+              --project_name "$CIRCLE_PROJECT_REPONAME" \
+              --figma_file_key "$FIGMA_FILE_KEY" \
+              --figma_access_token "$FIGMA_ACCESS_TOKEN" \
+              --validation_mode "auto" \
+              --validation_threshold 0.85
+      
+      - store_artifacts:
+          path: output/
+          destination: design-artifacts
+      
+      - run:
+          name: Notify team
+          command: |
+            curl -X POST "$SLACK_WEBHOOK" \
+              -d '{"text": "🎨 Designs updated: '$CIRCLE_BUILD_URL'"}'
+
+workflows:
+  version: 2
+  design-pipeline:
+    jobs:
+      - omni-architect:
+          filters:
+            branches:
+              only: main
+```
+
+## Secrets Management
+
+<Tabs>
+  <Tab title="GitHub Actions">
+    Add secrets in repository Settings → Secrets and variables → Actions:
+    
+    ```
+    FIGMA_TOKEN=figd_xxxxxxxxxxxx
+    FIGMA_FILE_KEY=abc123XYZ
+    SLACK_WEBHOOK=https://hooks.slack.com/services/xxx
+    ```
+    
+    Reference in workflow:
+    ```yaml
+    env:
+      FIGMA_ACCESS_TOKEN: ${{ secrets.FIGMA_TOKEN }}
+    ```
+  </Tab>
+  
+  <Tab title="GitLab CI">
+    Add variables in Settings → CI/CD → Variables:
+    
+    ```
+    FIGMA_ACCESS_TOKEN (masked)
+    FIGMA_FILE_KEY
+    SLACK_WEBHOOK (masked)
+    ```
+    
+    Reference in pipeline:
+    ```yaml
+    script:
+      - echo $FIGMA_ACCESS_TOKEN
+    ```
+  </Tab>
+  
+  <Tab title="Jenkins">
+    Add credentials in Manage Jenkins → Credentials:
+    
+    1. Kind: Secret text
+    2. ID: `figma-token`
+    3. Secret: `figd_xxxx`
+    
+    Reference in Jenkinsfile:
+    ```groovy
+    environment {
+        FIGMA_TOKEN = credentials('figma-token')
+    }
+    ```
+  </Tab>
+</Tabs>
+
+## Validation Gate
+
+Block PRs if validation score is too low:
+
+```yaml .github/workflows/pr-gate.yml
+name: Design Validation Gate
+
+on:
+  pull_request:
+    paths:
+      - 'docs/prd/**/*.md'
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+      
+      - name: Run validation
+        env:
+          FIGMA_ACCESS_TOKEN: ${{ secrets.FIGMA_TOKEN }}
+        run: |
+          skills run omni-architect \
+            --prd_source "$(git diff --name-only origin/main | grep 'prd' | head -1)" \
+            --project_name "${{ github.event.repository.name }}" \
+            --figma_file_key "${{ secrets.FIGMA_FILE_KEY }}" \
+            --figma_access_token "$FIGMA_ACCESS_TOKEN" \
+            --validation_mode "auto" \
+            --validation_threshold 0.90
+      
+      - name: Check validation score
+        run: |
+          SCORE=$(jq '.overall_score' output/validation-report.json)
+          echo "Validation score: $SCORE"
+          
+          if (( $(echo "$SCORE < 0.90" | bc -l) )); then
+            echo "❌ Validation score too low: $SCORE (required: 0.90)"
+            exit 1
+          fi
+          
+          echo "✅ Validation passed"
+```
+
+**Result:**
+- PR blocked if score < 0.90
+- Forces PRD quality improvements
+- Only mergeable after validation passes
+
+## Scheduled Runs
+
+Re-validate designs nightly:
+
+```yaml .github/workflows/nightly-validation.yml
+name: Nightly Design Validation
+
+on:
+  schedule:
+    - cron: '0 2 * * *'  # 2 AM UTC daily
+
+jobs:
+  validate-all:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        prd:
+          - docs/prd/feature-checkout.md
+          - docs/prd/feature-auth.md
+          - docs/prd/feature-catalog.md
+    
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+      
+      - name: Validate ${{ matrix.prd }}
+        env:
+          FIGMA_ACCESS_TOKEN: ${{ secrets.FIGMA_TOKEN }}
+        run: |
+          skills run omni-architect \
+            --prd_source "${{ matrix.prd }}" \
+            --validation_mode "auto" \
+            --validation_threshold 0.85
+      
+      - name: Report results
+        if: always()
+        run: |
+          # Send daily digest to Slack
+          node scripts/send-digest.js
+```
+
+## Best Practices
+
+<AccordionGroup>
+  <Accordion title="Use Auto Validation in CI" icon="robot">
+    Set `validation_mode: "auto"` in CI environments to avoid interactive prompts. Set a reasonable threshold (0.85-0.90).
+  </Accordion>
+  
+  <Accordion title="Cache Dependencies" icon="box-archive">
+    Cache npm packages and skills to speed up builds:
+    ```yaml
+    - uses: actions/cache@v3
+      with:
+        path: ~/.npm
+        key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
+    ```
+  </Accordion>
+  
+  <Accordion title="Parallel PRD Processing" icon="layer-group">
+    Use matrix strategy to validate multiple PRDs in parallel:
+    ```yaml
+    strategy:
+      matrix:
+        prd: [checkout.md, auth.md, catalog.md]
+    ```
+  </Accordion>
+  
+  <Accordion title="Fail Fast on Low Scores" icon="triangle-exclamation">
+    Exit with non-zero code if validation score is below threshold to block bad PRDs early.
+  </Accordion>
+</AccordionGroup>
+
+## Monitoring & Alerts
+
+Track pipeline health over time:
+
+```javascript scripts/track-metrics.js
+const fs = require('fs');
+const report = JSON.parse(fs.readFileSync('output/validation-report.json'));
+
+// Send to your metrics service (Datadog, CloudWatch, etc.)
+const metrics = {
+  validation_score: report.overall_score,
+  coverage_score: report.breakdown.coverage.score,
+  consistency_score: report.breakdown.consistency.score,
+  duration_seconds: process.env.CI_JOB_DURATION || 0
+};
+
+fetch('https://api.datadoghq.com/api/v1/series', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+    'DD-API-KEY': process.env.DATADOG_API_KEY
+  },
+  body: JSON.stringify({
+    series: [
+      {
+        metric: 'omni_architect.validation_score',
+        points: [[Date.now() / 1000, metrics.validation_score]],
+        tags: [`project:${process.env.CI_PROJECT_NAME}`]
+      }
+    ]
+  })
+});
+```
+
+## Troubleshooting
+
+| Issue | Solution |
+|-------|----------|
+| "Figma token invalid" | Regenerate token and update CI secrets |
+| "Permission denied" in hooks | Add `chmod +x scripts/*.sh` before running |
+| Pipeline timeout | Increase job timeout or optimize PRD size |
+| "command not found: skills" | Ensure `npm install -g @skills/cli` runs |
+| Artifacts not uploaded | Check `output/` directory exists after run |
+
+<Warning>
+Figma tokens expire. Set up monitoring to alert when tokens need rotation.
+</Warning>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Custom Workflows" icon="code-branch" href="/examples/custom-workflows">
+    Advanced hook configurations
+  </Card>
+  <Card title="Configuration Reference" icon="file-code" href="/configuration/overview">
+    Complete YAML configuration
+  </Card>
+  <Card title="Troubleshooting" icon="wrench" href="/guides/troubleshooting">
+    Debug CI/CD issues
+  </Card>
+  <Card title="API Reference" icon="brackets-curly" href="/skills/prd-parse">
+    CLI command reference
+  </Card>
+</CardGroup>

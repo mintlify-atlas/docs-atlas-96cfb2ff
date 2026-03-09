@@ -1,0 +1,376 @@
+---
+title: Diagram Types
+description: All 7 Mermaid diagram types supported by Omni Architect
+---
+
+Omni Architect supports 7 different Mermaid diagram types, each serving a specific purpose in visualizing product logic. Configure which diagrams to generate using the `diagram_types` parameter.
+
+## Configuration
+
+<CodeGroup>
+
+```yaml .omni-architect.yml
+diagram_types:
+  - flowchart
+  - sequence
+  - erDiagram
+  - stateDiagram
+  - C4Context
+  - journey
+  - gantt
+```
+
+```bash CLI
+skills run omni-architect \
+  --diagram_types '["flowchart","sequence","erDiagram","stateDiagram","C4Context","journey","gantt"]' \
+  # ... other parameters
+```
+
+</CodeGroup>
+
+## Default Diagram Types
+
+If not specified, Omni Architect generates these 5 diagram types by default:
+
+```yaml
+diagram_types:
+  - flowchart
+  - sequence
+  - erDiagram
+  - stateDiagram
+  - C4Context
+```
+
+## Available Diagram Types
+
+### 1. Flowchart (`flowchart`)
+
+**Purpose**: Visualize business flows and process logic
+
+**PRD Mapping**: Extracted from `flows` section in parsed PRD
+
+**Use Cases**:
+- User checkout process
+- Authentication flows
+- Product search and filtering
+- Multi-step forms
+
+**Example Output**:
+
+```mermaid
+flowchart TD
+    A[Carrinho de Compras] --> B{Usuário autenticado?}
+    B -->|Sim| C[Selecionar Endereço]
+    B -->|Não| D[Login/Cadastro]
+    D --> C
+    C --> E[Selecionar Frete]
+    E --> F[Selecionar Pagamento]
+    F --> G{Pagamento aprovado?}
+    G -->|Sim| H[Pedido Confirmado]
+    G -->|Não| I[Erro no Pagamento]
+    I --> F
+    H --> J[Email de Confirmação]
+    H --> K[Atualizar Estoque]
+```
+
+---
+
+### 2. Sequence Diagram (`sequence`)
+
+**Purpose**: Show interactions between actors and system components
+
+**PRD Mapping**: Extracted from `user_stories` section in parsed PRD
+
+**Use Cases**:
+- API request/response flows
+- User-system interactions
+- Service-to-service communication
+- Authentication sequences
+
+**Example Output**:
+
+```mermaid
+sequenceDiagram
+    actor U as Usuário
+    participant F as Frontend
+    participant A as API Gateway
+    participant Auth as Auth Service
+    participant DB as Database
+
+    U->>F: Clica "Finalizar Compra"
+    F->>A: POST /checkout
+    A->>Auth: Validar Token JWT
+    Auth-->>A: Token válido
+    A->>DB: Criar Pedido
+    DB-->>A: Pedido criado (ID: 12345)
+    A->>A: Processar Pagamento
+    A-->>F: 201 Created { orderId: 12345 }
+    F-->>U: "Pedido confirmado!"
+```
+
+---
+
+### 3. ER Diagram (`erDiagram`)
+
+**Purpose**: Model data entities and their relationships
+
+**PRD Mapping**: Extracted from `entities` section in parsed PRD
+
+**Use Cases**:
+- Database schema design
+- Domain model visualization
+- Entity relationships
+- Data architecture planning
+
+**Example Output**:
+
+```mermaid
+erDiagram
+    USER ||--o{ ORDER : places
+    USER ||--|| CART : has
+    ORDER ||--|{ ORDER_ITEM : contains
+    PRODUCT ||--o{ ORDER_ITEM : "is in"
+    PRODUCT }|--|| CATEGORY : "belongs to"
+    ORDER ||--|| PAYMENT : "paid via"
+    ORDER ||--|| SHIPPING : "shipped by"
+
+    USER {
+        uuid id PK
+        string email UK
+        string name
+        enum role
+        datetime created_at
+    }
+    ORDER {
+        uuid id PK
+        uuid user_id FK
+        enum status
+        decimal total
+        datetime created_at
+    }
+    PRODUCT {
+        uuid id PK
+        string name
+        decimal price
+        int stock
+        uuid category_id FK
+    }
+```
+
+---
+
+### 4. State Diagram (`stateDiagram`)
+
+**Purpose**: Represent state machines and feature states
+
+**PRD Mapping**: Extracted from `features.states` in parsed PRD
+
+**Use Cases**:
+- Order status workflows
+- Feature flags and states
+- User lifecycle management
+- Application state transitions
+
+**Example Output**:
+
+```mermaid
+stateDiagram-v2
+    [*] --> Pending
+    Pending --> Processing : Payment Approved
+    Pending --> Cancelled : Timeout
+    Processing --> Shipped : Items Packed
+    Processing --> Cancelled : Out of Stock
+    Shipped --> Delivered : Confirmed by Customer
+    Shipped --> Returned : Return Requested
+    Delivered --> [*]
+    Cancelled --> [*]
+    Returned --> Refunded
+    Refunded --> [*]
+```
+
+---
+
+### 5. C4 Context Diagram (`C4Context`)
+
+**Purpose**: High-level architectural overview
+
+**PRD Mapping**: Extracted from `system_overview` in parsed PRD
+
+**Use Cases**:
+- System context and boundaries
+- External integrations
+- Microservices architecture
+- Platform overview
+
+**Example Output**:
+
+```mermaid
+C4Context
+    title System Context - E-Commerce Platform
+
+    Person(customer, "Customer", "A user purchasing products")
+    Person(admin, "Admin", "Platform administrator")
+    
+    System(ecommerce, "E-Commerce Platform", "Allows customers to purchase products online")
+    
+    System_Ext(payment, "Payment Gateway", "Processes payments")
+    System_Ext(shipping, "Shipping Provider", "Handles logistics")
+    System_Ext(email, "Email Service", "Sends notifications")
+    
+    Rel(customer, ecommerce, "Browses and purchases", "HTTPS")
+    Rel(admin, ecommerce, "Manages platform", "HTTPS")
+    Rel(ecommerce, payment, "Processes payments", "API")
+    Rel(ecommerce, shipping, "Creates shipments", "API")
+    Rel(ecommerce, email, "Sends emails", "SMTP")
+```
+
+---
+
+### 6. Journey Diagram (`journey`)
+
+**Purpose**: Map user journey and experience
+
+**PRD Mapping**: Extracted from `personas + journeys` in parsed PRD
+
+**Use Cases**:
+- User experience mapping
+- Customer journey visualization
+- Touchpoint analysis
+- Emotion and satisfaction tracking
+
+**Example Output**:
+
+```mermaid
+journey
+    title New Customer Purchase Journey
+    section Discovery
+      Search for product: 5: Customer
+      Browse catalog: 4: Customer
+      View product details: 5: Customer
+    section Evaluation
+      Compare products: 3: Customer
+      Read reviews: 4: Customer
+      Add to cart: 5: Customer
+    section Purchase
+      Create account: 3: Customer
+      Enter shipping: 4: Customer
+      Select payment: 4: Customer
+      Confirm order: 5: Customer
+    section Post-Purchase
+      Receive confirmation: 5: Customer
+      Track shipment: 4: Customer
+      Receive product: 5: Customer
+```
+
+---
+
+### 7. Gantt Chart (`gantt`)
+
+**Purpose**: Show roadmap and feature dependencies over time
+
+**PRD Mapping**: Extracted from `dependencies + timeline` in parsed PRD
+
+**Use Cases**:
+- Project timeline planning
+- Feature dependency tracking
+- Sprint planning
+- Milestone visualization
+
+**Example Output**:
+
+```mermaid
+gantt
+    title E-Commerce Platform Development Roadmap
+    dateFormat YYYY-MM-DD
+    section Phase 1
+    User Authentication    :done,    auth, 2026-01-01, 2026-01-15
+    Product Catalog        :active,  catalog, 2026-01-10, 2026-02-01
+    section Phase 2
+    Shopping Cart          :         cart, 2026-01-20, 2026-02-10
+    Checkout Flow          :         checkout, after cart, 15d
+    section Phase 3
+    Payment Integration    :         payment, after checkout, 10d
+    Order Management       :         orders, after payment, 12d
+```
+
+---
+
+## PRD to Diagram Mapping
+
+| PRD Element | Diagram Type | Purpose |
+|-------------|--------------|----------|
+| `flows` | `flowchart` | Visualize business flows |
+| `user_stories` | `sequence` | Show actor-system interactions |
+| `entities` | `erDiagram` | Model data and relationships |
+| `features.states` | `stateDiagram` | Represent state machines |
+| `system_overview` | `C4Context` | High-level architecture |
+| `personas + journeys` | `journey` | User journey maps |
+| `dependencies + timeline` | `gantt` | Roadmap and dependencies |
+
+## Selective Generation
+
+You can generate only specific diagram types based on your needs:
+
+### Architecture Focus
+
+```yaml
+diagram_types:
+  - erDiagram
+  - C4Context
+```
+
+### User Flow Focus
+
+```yaml
+diagram_types:
+  - flowchart
+  - sequence
+  - journey
+```
+
+### Project Planning Focus
+
+```yaml
+diagram_types:
+  - gantt
+  - stateDiagram
+```
+
+## Automatic Skipping
+
+If your PRD doesn't contain relevant data for a diagram type, Omni Architect automatically skips it:
+
+<Warning>
+**Example**: If your PRD has no user stories, sequence diagrams will be automatically skipped even if included in `diagram_types`.
+</Warning>
+
+## Best Practices
+
+<AccordionGroup>
+  <Accordion title="Start with Core Diagrams">
+    Begin with the default 5 diagrams (`flowchart`, `sequence`, `erDiagram`, `stateDiagram`, `C4Context`) which cover most product logic validation needs.
+  </Accordion>
+  
+  <Accordion title="Add Journey for UX Projects">
+    Include `journey` when working on user experience-focused features or when presenting to stakeholders who value customer journey visualization.
+  </Accordion>
+  
+  <Accordion title="Use Gantt for Planning">
+    Add `gantt` when your PRD includes timeline information or when coordinating with project managers who need visual roadmaps.
+  </Accordion>
+  
+  <Accordion title="ER Diagram is Critical">
+    Always include `erDiagram` as it forms the foundation for data consistency across all other diagrams.
+  </Accordion>
+</AccordionGroup>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Validation Modes" icon="check-circle" href="/configuration/validation-modes">
+    Learn how diagrams are validated before Figma generation
+  </Card>
+  <Card title="Design Systems" icon="palette" href="/configuration/design-systems">
+    Configure how diagrams are transformed into Figma assets
+  </Card>
+</CardGroup>

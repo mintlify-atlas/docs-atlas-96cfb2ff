@@ -1,0 +1,388 @@
+---
+title: Design Systems
+description: Configure Material 3, Apple HIG, Tailwind, or custom design systems for Figma asset generation
+---
+
+Omni Architect supports multiple design systems for generating Figma assets. The `design_system` parameter determines which design language, component patterns, and visual style will be applied to your generated assets.
+
+## Configuration
+
+<CodeGroup>
+
+```yaml .omni-architect.yml
+design_system: "material-3"  # material-3 | apple-hig | tailwind | custom
+```
+
+```bash CLI
+skills run omni-architect \
+  --design_system "material-3" \
+  # ... other parameters
+```
+
+</CodeGroup>
+
+## Available Design Systems
+
+### Material 3 (Default)
+
+**Value**: `material-3`
+
+**Description**: Google's Material Design 3 (Material You) system with dynamic color, adaptive components, and modern visual language.
+
+**Best For**:
+- Android applications
+- Progressive web apps
+- Cross-platform products
+- Data-heavy interfaces
+
+**Key Characteristics**:
+- Dynamic color system with tonal palettes
+- Adaptive components that respond to context
+- Emphasis on elevation and surface hierarchy
+- Built-in accessibility features
+- Component states (enabled, disabled, focused, pressed)
+
+**Example Configuration**:
+
+```yaml .omni-architect.yml
+design_system: "material-3"
+locale: "en-US"
+
+design_tokens:
+  colors:
+    primary: "#6750A4"      # Material purple
+    secondary: "#625B71"
+    success: "#4CAF50"
+    error: "#B3261E"
+    warning: "#F57C00"
+  typography:
+    font_family: "Roboto"
+    heading_size: 24
+    body_size: 14
+  spacing:
+    base: 8
+    scale: 1.5
+```
+
+**Figma Output Includes**:
+- Material 3 component library
+- Elevation and shadow tokens
+- State layer variants
+- Adaptive layouts (mobile, tablet, desktop)
+- Accessibility annotations
+
+---
+
+### Apple Human Interface Guidelines
+
+**Value**: `apple-hig`
+
+**Description**: Apple's Human Interface Guidelines for iOS, iPadOS, macOS, watchOS, and visionOS.
+
+**Best For**:
+- iOS/iPadOS applications
+- macOS applications
+- Apple ecosystem products
+- Consumer-focused apps
+
+**Key Characteristics**:
+- SF Pro typography system
+- Platform-specific navigation patterns
+- Emphasis on clarity and depth
+- Native iOS/macOS components
+- Dark mode support
+
+**Example Configuration**:
+
+```yaml .omni-architect.yml
+design_system: "apple-hig"
+locale: "en-US"
+
+design_tokens:
+  colors:
+    primary: "#007AFF"      # iOS Blue
+    secondary: "#5856D6"    # iOS Purple
+    success: "#34C759"      # iOS Green
+    error: "#FF3B30"        # iOS Red
+    warning: "#FF9500"      # iOS Orange
+  typography:
+    font_family: "SF Pro"
+    heading_size: 28        # Large Title
+    body_size: 17           # Body
+  spacing:
+    base: 8
+    scale: 1.5
+```
+
+**Figma Output Includes**:
+- iOS/macOS native components
+- Navigation patterns (tab bar, navigation bar)
+- SF Symbols integration
+- Dark mode variants
+- Platform-specific spacing and sizing
+
+---
+
+### Tailwind CSS
+
+**Value**: `tailwind`
+
+**Description**: Tailwind CSS design system with utility-first approach and customizable design tokens.
+
+**Best For**:
+- Web applications
+- Rapid prototyping
+- Developer-friendly workflows
+- Highly customized designs
+
+**Key Characteristics**:
+- Utility-first component structure
+- Extensive color palette (50-900 scale)
+- Responsive breakpoint system
+- Custom spacing scale
+- JIT-compatible token naming
+
+**Example Configuration**:
+
+```yaml .omni-architect.yml
+design_system: "tailwind"
+locale: "en-US"
+
+design_tokens:
+  colors:
+    primary: "#3B82F6"      # blue-500
+    secondary: "#8B5CF6"    # violet-500
+    success: "#10B981"      # emerald-500
+    error: "#EF4444"        # red-500
+    warning: "#F59E0B"      # amber-500
+  typography:
+    font_family: "Inter"
+    heading_size: 24        # text-2xl
+    body_size: 14           # text-sm
+  spacing:
+    base: 4                 # Tailwind base unit
+    scale: 2                # 4, 8, 16, 32, 64...
+```
+
+**Figma Output Includes**:
+- Tailwind-compatible component structure
+- Utility class annotations
+- Responsive breakpoint frames
+- Color scale documentation (50-900)
+- Spacing scale references
+
+---
+
+### Custom Design System
+
+**Value**: `custom`
+
+**Description**: Bring your own design system with fully customizable tokens, components, and patterns.
+
+**Best For**:
+- Established brand systems
+- Enterprise applications
+- Unique visual identities
+- Specialized industries
+
+**Key Characteristics**:
+- Complete token customization
+- No predefined components
+- Brand-specific patterns
+- Full control over visual language
+
+**Example Configuration**:
+
+```yaml .omni-architect.yml
+design_system: "custom"
+locale: "en-US"
+
+design_tokens:
+  colors:
+    primary: "#4A90D9"
+    secondary: "#7B68EE"
+    success: "#2ECC71"
+    error: "#E74C3C"
+    warning: "#FFA500"
+    neutral_50: "#F9FAFB"
+    neutral_100: "#F3F4F6"
+    neutral_200: "#E5E7EB"
+    neutral_500: "#6B7280"
+    neutral_900: "#111827"
+  typography:
+    font_family: "Inter"
+    font_family_mono: "Fira Code"
+    heading_1: 32
+    heading_2: 28
+    heading_3: 24
+    heading_4: 20
+    body_large: 16
+    body_size: 14
+    body_small: 12
+    caption: 11
+  spacing:
+    base: 8
+    scale: 1.5
+    xs: 4
+    sm: 8
+    md: 16
+    lg: 24
+    xl: 32
+    xxl: 48
+  border_radius:
+    sm: 4
+    md: 8
+    lg: 12
+    xl: 16
+    full: 9999
+  shadows:
+    sm: "0 1px 2px rgba(0,0,0,0.05)"
+    md: "0 4px 6px rgba(0,0,0,0.1)"
+    lg: "0 10px 15px rgba(0,0,0,0.1)"
+    xl: "0 20px 25px rgba(0,0,0,0.1)"
+```
+
+**Figma Output Includes**:
+- Custom component library
+- Brand-specific token documentation
+- Flexible layout systems
+- Fully customizable visual style
+
+---
+
+## Design System Comparison
+
+| Feature | Material 3 | Apple HIG | Tailwind | Custom |
+|---------|-----------|-----------|----------|--------|
+| **Component Library** | ✅ Comprehensive | ✅ Native iOS/macOS | ✅ Utility-based | 🔧 DIY |
+| **Typography** | Roboto | SF Pro | Inter (default) | Any font |
+| **Color System** | Tonal palettes | Semantic colors | 50-900 scale | Fully custom |
+| **Dark Mode** | ✅ Built-in | ✅ Native support | ✅ Supported | 🔧 DIY |
+| **Accessibility** | ✅ WCAG built-in | ✅ Native features | ⚠️ Manual | 🔧 DIY |
+| **Platform** | Android/Web | iOS/macOS | Web | Any |
+| **Customization** | ⚠️ Limited | ⚠️ Limited | ✅ High | ✅ Total |
+| **Learning Curve** | Medium | Medium | Low | High |
+
+## Design Tokens Integration
+
+All design systems support custom design tokens. Tokens defined in the `design_tokens` section override the default system values:
+
+```yaml
+design_system: "material-3"  # Base system
+
+design_tokens:
+  colors:
+    primary: "#FF6B00"  # Override Material purple with custom brand color
+    # Other Material 3 colors remain as defined
+```
+
+See [Design Tokens](/configuration/design-tokens) for complete customization options.
+
+## Figma Asset Generation
+
+Each design system generates different Figma assets:
+
+### Material 3
+
+```
+📁 {project_name} - Omni Architect
+├── 📄 Component Library
+│   ├── 🧩 Buttons (filled, outlined, text)
+│   ├── 🧩 Cards (elevated, filled, outlined)
+│   ├── 🧩 Navigation (bottom, rail, drawer)
+│   └── 🧩 Design Tokens
+├── 📄 User Flows
+│   └── 🖼️ Flows with Material components
+└── ...
+```
+
+### Apple HIG
+
+```
+📁 {project_name} - Omni Architect
+├── 📄 Component Library
+│   ├── 🧩 Navigation Bar
+│   ├── 🧩 Tab Bar
+│   ├── 🧩 Lists (grouped, inset)
+│   └── 🧩 Design Tokens
+├── 📄 User Flows
+│   └── 🖼️ Flows with iOS/macOS components
+└── ...
+```
+
+### Tailwind
+
+```
+📁 {project_name} - Omni Architect
+├── 📄 Component Library
+│   ├── 🧩 Utility Variants
+│   ├── 🧩 Color Scale (50-900)
+│   ├── 🧩 Spacing Reference
+│   └── 🧩 Design Tokens
+├── 📄 User Flows
+│   └── 🖼️ Flows with utility classes annotated
+└── ...
+```
+
+### Custom
+
+```
+📁 {project_name} - Omni Architect
+├── 📄 Component Library
+│   ├── 🧩 Custom Components
+│   └── 🧩 Design Tokens
+├── 📄 User Flows
+│   └── 🖼️ Flows with custom visual language
+└── ...
+```
+
+## Best Practices
+
+<AccordionGroup>
+  <Accordion title="Match Your Target Platform">
+    Use `apple-hig` for iOS/macOS apps, `material-3` for Android/cross-platform, and `tailwind` for web applications.
+  </Accordion>
+  
+  <Accordion title="Start with a Base System">
+    Even if you have a custom design system, starting with `material-3` or `tailwind` and customizing via tokens is faster than `custom`.
+  </Accordion>
+  
+  <Accordion title="Maintain Token Consistency">
+    Ensure your design tokens are consistent with your actual implementation to reduce developer handoff friction.
+  </Accordion>
+  
+  <Accordion title="Consider Accessibility">
+    Material 3 and Apple HIG have built-in accessibility features. If using `custom`, ensure you define accessible color contrasts and sizing.
+  </Accordion>
+  
+  <Accordion title="Document Custom Systems">
+    When using `design_system: "custom"`, create comprehensive token documentation to help designers and developers understand the system.
+  </Accordion>
+</AccordionGroup>
+
+## Switching Design Systems
+
+You can change design systems mid-project by updating the configuration:
+
+```yaml
+# Before
+design_system: "material-3"
+
+# After
+design_system: "apple-hig"
+```
+
+<Warning>
+**Re-generation Required**: Changing design systems requires regenerating all Figma assets. Previous assets will remain in Figma but won't be automatically updated.
+</Warning>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Design Tokens" icon="swatchbook" href="/configuration/design-tokens">
+    Customize colors, typography, spacing, and more
+  </Card>
+  <Card title="Diagram Types" icon="diagram-project" href="/configuration/diagram-types">
+    Configure which diagrams to generate
+  </Card>
+</CardGroup>

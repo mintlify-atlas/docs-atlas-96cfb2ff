@@ -1,0 +1,341 @@
+---
+title: 'Mermaid Generator'
+description: 'Generates Mermaid diagrams automatically from parsed PRDs'
+---
+
+# Mermaid Generator
+
+The **Mermaid Generator** is Phase 2 of the Omni Architect pipeline. It automatically generates multiple types of Mermaid diagrams from the parsed PRD structure, creating visual representations of product logic, data models, user interactions, and system architecture.
+
+## Purpose
+
+Transforms structured PRD data into executable Mermaid diagram code that visualizes:
+
+- **Business Flows** as flowcharts
+- **User Interactions** as sequence diagrams
+- **Data Models** as entity-relationship diagrams
+- **Feature States** as state diagrams
+- **System Architecture** as C4 Context diagrams
+- **User Journeys** as journey maps
+- **Project Timelines** as Gantt charts
+
+These diagrams serve as an intermediate validation layer before investing in high-fidelity Figma designs.
+
+## Inputs
+
+<ParamField path="parsed_prd" type="object" required>
+  The structured PRD output from the PRD Parser (Phase 1). Must contain features, entities, flows, and user stories.
+</ParamField>
+
+<ParamField path="diagram_types" type="array" default='["flowchart", "sequence", "erDiagram"]'>
+  Array of diagram types to generate. Supported values:
+  - `flowchart` - Business process flows
+  - `sequence` - Actor-system interaction sequences
+  - `erDiagram` - Entity-relationship data models
+  - `stateDiagram` - State machines for features
+  - `C4Context` - System context architecture
+  - `journey` - User journey maps
+  - `gantt` - Project timelines
+</ParamField>
+
+<ParamField path="locale" type="string" default="pt-BR">
+  Language for diagram labels and annotations. Supports `pt-BR`, `en-US`, `es-ES`, etc.
+</ParamField>
+
+## Outputs
+
+<ResponseField name="diagrams" type="array">
+  Array of generated diagram objects, each containing:
+  
+  **Structure:**
+  ```json
+  [
+    {
+      "type": "flowchart|sequence|erDiagram|stateDiagram|C4Context|journey|gantt",
+      "code": "string (Mermaid syntax)",
+      "coverage_pct": "number (0-100)",
+      "source_features": ["F001", "F002"],
+      "metadata": {
+        "node_count": "number",
+        "created_at": "ISO timestamp",
+        "syntax_valid": "boolean"
+      }
+    }
+  ]
+  ```
+</ResponseField>
+
+## Diagram Type Mappings
+
+The generator automatically selects appropriate diagram types based on PRD content:
+
+| PRD Element | Mermaid Type | Condition |
+|-------------|--------------|-----------||
+| `flows` | `flowchart TD` | Always generated when flows exist |
+| `user_stories` + `entities` | `sequenceDiagram` | When actor-system interactions are present |
+| `entities` + `relationships` | `erDiagram` | When >= 2 entities with relationships exist |
+| `features` with lifecycle states | `stateDiagram-v2` | When features have state transitions |
+| `system_overview` | `C4Context` | When PRD mentions external systems |
+| `personas` + `journeys` | `journey` | When user personas are defined |
+| `dependencies` + `timeline` | `gantt` | When feature timeline is specified |
+
+## Generation Rules
+
+### 1. Syntax Validation
+All generated Mermaid code is validated using a parser check before output. Invalid syntax triggers automatic correction with up to 3 retry attempts.
+
+### 2. Localization
+Labels, annotations, and node names are automatically translated to the configured `locale`:
+
+```mermaid
+// locale: pt-BR
+flowchart TD
+    A[Início] --> B{Autenticado?}
+    B -->|Sim| C[Dashboard]
+    B -->|Não| D[Login]
+```
+
+### 3. Node Limits
+Diagrams are limited to 50 nodes maximum. If a flow exceeds this limit, it's automatically split into sub-diagrams with an index diagram for navigation.
+
+### 4. Traceability Comments
+Feature and story IDs are embedded as comments for traceability:
+
+```mermaid
+flowchart TD
+    %% Feature: F002 - Checkout Flow
+    %% Story: US015
+    A[Cart] --> B[Address]
+    B --> C[Payment]
+```
+
+### 5. Coverage Calculation
+Each diagram includes a `coverage_pct` indicating what percentage of PRD elements are represented:
+
+```
+coverage_pct = (represented_elements / total_elements) × 100
+```
+
+## Example Outputs
+
+### Flowchart: Checkout Process
+
+```mermaid
+flowchart TD
+    A[🛒 Cart] --> B{Authenticated?}
+    B -->|Yes| C[📍 Address]
+    B -->|No| D[🔐 Login]
+    D --> C
+    C --> E[🚚 Shipping]
+    E --> F[💳 Payment]
+    F --> G{Approved?}
+    G -->|Yes| H[✅ Confirmed]
+    G -->|No| I[❌ Error]
+    I --> F
+    H --> J[📧 Email]
+    H --> K[📦 Update Stock]
+```
+
+**Metadata:**
+```json
+{
+  "type": "flowchart",
+  "coverage_pct": 95,
+  "source_features": ["F002"],
+  "node_count": 11
+}
+```
+
+### Sequence Diagram: User Registration
+
+```mermaid
+sequenceDiagram
+    actor U as User
+    participant F as Frontend
+    participant A as API
+    participant Auth as Auth Service
+    participant DB as Database
+    participant Email as Email Service
+
+    U->>F: Click "Sign Up"
+    F->>A: POST /register {email, password}
+    A->>Auth: Validate password strength
+    Auth-->>A: Valid
+    A->>DB: Create user record
+    DB-->>A: User created (ID: 123)
+    A->>Email: Send verification email
+    Email-->>U: Verification email
+    A-->>F: 201 Created
+    F-->>U: "Check your email"
+```
+
+**Metadata:**
+```json
+{
+  "type": "sequence",
+  "coverage_pct": 100,
+  "source_features": ["F001"],
+  "node_count": 6
+}
+```
+
+### ER Diagram: E-Commerce Domain
+
+```mermaid
+erDiagram
+    USER ||--o{ ORDER : places
+    USER ||--|| CART : has
+    ORDER ||--|{ ORDER_ITEM : contains
+    PRODUCT ||--o{ ORDER_ITEM : "is in"
+    PRODUCT }|--|| CATEGORY : "belongs to"
+    ORDER ||--|| PAYMENT : "paid via"
+    ORDER ||--|| SHIPPING : "shipped by"
+
+    USER {
+        uuid id PK
+        string email UK
+        string name
+        enum role
+        datetime created_at
+    }
+    ORDER {
+        uuid id PK
+        uuid user_id FK
+        enum status
+        decimal total
+        datetime created_at
+    }
+    PRODUCT {
+        uuid id PK
+        string name
+        text description
+        decimal price
+        int stock
+        uuid category_id FK
+    }
+    CATEGORY {
+        uuid id PK
+        string name
+        string slug
+    }
+    ORDER_ITEM {
+        uuid id PK
+        uuid order_id FK
+        uuid product_id FK
+        int quantity
+        decimal price_snapshot
+    }
+    CART {
+        uuid id PK
+        uuid user_id FK
+        datetime updated_at
+    }
+    PAYMENT {
+        uuid id PK
+        uuid order_id FK
+        enum method
+        enum status
+        decimal amount
+    }
+    SHIPPING {
+        uuid id PK
+        uuid order_id FK
+        string address
+        enum carrier
+        string tracking_code
+    }
+```
+
+**Metadata:**
+```json
+{
+  "type": "erDiagram",
+  "coverage_pct": 90,
+  "source_features": ["F001", "F002", "F003"],
+  "node_count": 8
+}
+```
+
+### State Diagram: Order Lifecycle
+
+```mermaid
+stateDiagram-v2
+    [*] --> Created
+    Created --> AwaitingPayment: Submit order
+    AwaitingPayment --> PaymentFailed: Payment declined
+    AwaitingPayment --> Paid: Payment successful
+    PaymentFailed --> AwaitingPayment: Retry payment
+    PaymentFailed --> Cancelled: Cancel order
+    Paid --> Processing: Begin processing
+    Processing --> Shipped: Items shipped
+    Shipped --> Delivered: Delivery confirmed
+    Delivered --> [*]
+    Cancelled --> [*]
+    
+    note right of AwaitingPayment
+        User has 30 minutes
+        to complete payment
+    end note
+    
+    note right of Shipped
+        Tracking number
+        sent via email
+    end note
+```
+
+**Metadata:**
+```json
+{
+  "type": "stateDiagram",
+  "coverage_pct": 100,
+  "source_features": ["F002"],
+  "node_count": 9
+}
+```
+
+## Best Practices
+
+### Provide Complete PRD Data
+The quality of generated diagrams depends on PRD completeness. Ensure your PRD includes:
+- Clear flow descriptions with steps
+- Well-defined entities with attributes
+- User stories with actors and actions
+- Feature dependencies and states
+
+### Request Multiple Diagram Types
+Different diagrams reveal different aspects of your product:
+```bash
+--diagram_types '["flowchart","sequence","erDiagram","stateDiagram"]'
+```
+
+### Review Coverage Percentages
+Low coverage indicates missing diagram types or incomplete PRD sections. Aim for >85% coverage.
+
+### Use Diagrams for Validation
+These diagrams are meant for logic validation before design. Share with stakeholders to catch gaps early.
+
+## Error Handling
+
+| Scenario | Behavior |
+|----------|----------|
+| Invalid Mermaid syntax | Auto-correction with up to 3 retries, then warning |
+| PRD missing required sections | Skips affected diagram types, generates what's possible |
+| Diagram exceeds 50 nodes | Auto-splits into sub-diagrams with index |
+| Unsupported diagram type | Warning logged, type skipped |
+| Entity relationship cycles | Detected and resolved with proper edge directions |
+
+## Integration
+
+The Mermaid Generator runs automatically in Phase 2 of the Omni Architect pipeline:
+
+```bash
+skills run omni-architect \
+  --prd_source "./docs/my-prd.md" \
+  --diagram_types '["flowchart","sequence","erDiagram"]' \
+  --locale "pt-BR" \
+  --project_name "My Project" \
+  --figma_file_key "abc123" \
+  --figma_access_token "$FIGMA_TOKEN"
+```
+
+Generated diagrams flow into the Logic Validator (Phase 3) for coherence analysis.

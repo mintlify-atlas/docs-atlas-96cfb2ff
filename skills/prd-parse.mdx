@@ -1,0 +1,229 @@
+---
+title: 'PRD Parser'
+description: 'Extracts semantic structure from Product Requirements Documents'
+---
+
+# PRD Parser
+
+The **PRD Parser** is Phase 1 of the Omni Architect pipeline. It analyzes Product Requirements Documents (PRDs) written in Markdown and extracts semantic structure including features, user stories, domain entities, business flows, and acceptance criteria.
+
+## Purpose
+
+The PRD Parser transforms unstructured PRD text into a machine-readable semantic structure that serves as the foundation for automated diagram generation and validation. It identifies:
+
+- **Features** with priority and complexity ratings
+- **User Stories** following the "As X, I want Y, so that Z" pattern
+- **Domain Entities** and their attributes
+- **Business Flows** with sequential steps
+- **Acceptance Criteria** per feature
+- **Dependencies** between features
+- **Personas** and their characteristics
+
+## Inputs
+
+<ParamField path="prd_content" type="string" required>
+  Complete PRD content in Markdown format. The parser expects structured PRDs with heading levels (H1, H2, H3) and recognizable section patterns.
+</ParamField>
+
+## Outputs
+
+<ResponseField name="parsed_prd" type="object">
+  Semantic structure containing extracted features, stories, entities, flows, requirements, acceptance criteria, dependencies, and personas.
+  
+  **Structure:**
+  ```json
+  {
+    "project": "string",
+    "completeness_score": "number (0.0-1.0)",
+    "features": [
+      {
+        "id": "string",
+        "name": "string",
+        "priority": "high|medium|low",
+        "complexity": "high|medium|low",
+        "stories": ["string"],
+        "dependencies": ["string"]
+      }
+    ],
+    "entities": [
+      {
+        "name": "string",
+        "attributes": ["string"],
+        "relationships": [
+          {
+            "target": "string",
+            "type": "one-to-one|one-to-many|many-to-many"
+          }
+        ]
+      }
+    ],
+    "user_stories": ["object"],
+    "flows": ["object"],
+    "requirements": ["object"],
+    "acceptance_criteria": ["object"],
+    "personas": ["object"]
+  }
+  ```
+</ResponseField>
+
+<ResponseField name="completeness_score" type="number">
+  Quality score indicating how complete the PRD is (0.0 to 1.0). Scores below 0.6 trigger warnings with improvement suggestions.
+</ResponseField>
+
+## Algorithm
+
+The parser follows a 7-step extraction process:
+
+### 1. Tokenization
+The PRD is tokenized by heading levels (H1, H2, H3) to establish document structure and hierarchy.
+
+### 2. Semantic Classification
+Each section is classified by type using pattern matching heuristics:
+
+| Pattern in Text | Classification |
+|-----------------|----------------|
+| "Como [persona], quero..." or "As [persona], I want..." | User Story |
+| "Requisito:", "Deve...", "Must..." | Functional Requirement |
+| "Performance:", "Security:", "Availability:" | Non-Functional Requirement |
+| Tables with attributes/fields | Domain Entity |
+| "Fluxo:", "Flow:", numbered step lists | Business Flow |
+| "Critério de aceite", "Acceptance criteria", checkboxes | Acceptance Criteria |
+
+### 3. Named Entity Recognition (NER)
+Extracts domain entities by identifying nouns that appear consistently across the document, particularly in:
+- Table column headers
+- Entity relationship descriptions
+- User story subjects and objects
+
+### 4. Relationship Mapping
+Maps relationships between entities based on:
+- Explicit relationship statements ("User has many Orders")
+- Foreign key references in entity tables
+- Implied relationships in user stories and flows
+
+### 5. Dependency Graph Calculation
+Builds a directed acyclic graph (DAG) of feature dependencies by analyzing:
+- Explicit "depends on" statements
+- Sequential ordering in roadmaps
+- Prerequisite mentions in acceptance criteria
+
+### 6. Completeness Score Computation
+Calculates a weighted score based on:
+- **Features defined** (25%): Are features clearly documented?
+- **User stories present** (20%): Are user stories complete?
+- **Entities documented** (20%): Are domain entities specified?
+- **Acceptance criteria** (15%): Do features have acceptance criteria?
+- **Flows defined** (10%): Are business flows documented?
+- **Dependencies mapped** (10%): Are feature dependencies clear?
+
+### 7. Warning Generation
+If `completeness_score < 0.6`, generates specific warnings with actionable suggestions:
+- Missing sections
+- Incomplete user stories
+- Undefined entities
+- Ambiguous requirements
+
+## Example Output
+
+```json
+{
+  "project": "E-Commerce Platform",
+  "completeness_score": 0.87,
+  "features": [
+    {
+      "id": "F001",
+      "name": "User Authentication",
+      "priority": "high",
+      "complexity": "medium",
+      "stories": ["US001", "US002"],
+      "dependencies": []
+    },
+    {
+      "id": "F002",
+      "name": "Product Catalog",
+      "priority": "high",
+      "complexity": "high",
+      "stories": ["US003", "US004", "US005"],
+      "dependencies": ["F001"]
+    }
+  ],
+  "entities": [
+    {
+      "name": "User",
+      "attributes": ["id", "email", "name", "role", "created_at"],
+      "relationships": [
+        { "target": "Order", "type": "one-to-many" },
+        { "target": "Cart", "type": "one-to-one" }
+      ]
+    },
+    {
+      "name": "Product",
+      "attributes": ["id", "name", "price", "stock", "category_id"],
+      "relationships": [
+        { "target": "Category", "type": "many-to-one" },
+        { "target": "OrderItem", "type": "one-to-many" }
+      ]
+    }
+  ]
+}
+```
+
+## Best Practices
+
+### Write PRDs with Clear Structure
+Organize your PRD using consistent heading levels:
+```markdown
+# Project Name
+## Feature: User Authentication
+### User Story
+### Acceptance Criteria
+### Entities
+```
+
+### Use Standard User Story Format
+```markdown
+As a **customer**, I want to **save payment methods**, 
+so that **I can checkout faster on future purchases**.
+```
+
+### Document Entities with Tables
+```markdown
+### Entity: User
+| Attribute | Type | Required | Description |
+|-----------|------|----------|-------------|
+| id | UUID | Yes | Primary key |
+| email | String | Yes | Unique email |
+| name | String | Yes | Full name |
+```
+
+### Define Clear Acceptance Criteria
+```markdown
+#### Acceptance Criteria
+- [ ] User can log in with email and password
+- [ ] Invalid credentials show error message
+- [ ] Successful login redirects to dashboard
+```
+
+## Error Handling
+
+| Scenario | Behavior |
+|----------|----------|
+| PRD is empty or too short | Returns error with minimum length requirement |
+| No features detected | Emits warning, attempts to parse stories and entities |
+| Ambiguous entities | Lists ambiguities in warnings array |
+| Score < 0.6 | Continues processing but includes detailed improvement suggestions |
+| Invalid Markdown | Attempts graceful parsing, warns about malformed sections |
+
+## Integration
+
+The PRD Parser is invoked automatically as Phase 1 when running the full Omni Architect pipeline:
+
+```bash
+skills run omni-architect \
+  --prd_source "./docs/my-prd.md" \
+  --project_name "My Project" \
+  --figma_file_key "abc123" \
+  --figma_access_token "$FIGMA_TOKEN"
+```
+
+The `parsed_prd` output flows directly into the Mermaid Generator (Phase 2).

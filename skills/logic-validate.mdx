@@ -1,0 +1,402 @@
+---
+title: 'Logic Validator'
+description: 'Validates coherence between Mermaid diagrams and original PRD'
+---
+
+# Logic Validator
+
+The **Logic Validator** is Phase 3 of the Omni Architect pipeline. It analyzes the coherence and completeness of generated Mermaid diagrams against the original PRD, calculating a weighted quality score across six validation criteria.
+
+## Purpose
+
+This validation phase ensures that:
+
+1. All PRD features and stories are represented in diagrams
+2. Entities and flows are consistent across different diagram types
+3. Both happy paths and error scenarios are documented
+4. Every diagram element traces back to a PRD requirement
+5. Naming conventions are coherent across all artifacts
+6. Feature dependencies are properly sequenced
+
+The validator acts as a quality gate before expensive Figma asset generation begins, catching logic gaps and inconsistencies early.
+
+## Inputs
+
+<ParamField path="parsed_prd" type="object" required>
+  The structured PRD output from Phase 1 (PRD Parser). Used as the source of truth for validation.
+</ParamField>
+
+<ParamField path="diagrams" type="array" required>
+  Array of generated diagrams from Phase 2 (Mermaid Generator). Each diagram is validated against the PRD.
+</ParamField>
+
+<ParamField path="validation_mode" type="string" default="interactive">
+  Controls how validation results are handled:
+  - `interactive` - Present each diagram with its score, wait for approve/reject/modify input
+  - `batch` - Present all diagrams and consolidated report, wait for approve_all/reject_all/select
+  - `auto` - Automatically approve if score >= threshold, reject otherwise
+</ParamField>
+
+<ParamField path="validation_threshold" type="number" default={0.85}>
+  Minimum score (0.0 to 1.0) required for automatic approval when `validation_mode=auto`. Recommended range: 0.80-0.90.
+</ParamField>
+
+## Outputs
+
+<ResponseField name="validation_report" type="object">
+  Comprehensive validation report with scores, status, and actionable feedback.
+  
+  **Structure:**
+  ```json
+  {
+    "overall_score": "number (0.0-1.0)",
+    "status": "approved|rejected|pending",
+    "breakdown": {
+      "coverage": {
+        "score": "number",
+        "weight": 0.25,
+        "details": "string"
+      },
+      "consistency": {
+        "score": "number",
+        "weight": 0.25,
+        "details": "string"
+      },
+      "completeness": {
+        "score": "number",
+        "weight": 0.20,
+        "details": "string"
+      },
+      "traceability": {
+        "score": "number",
+        "weight": 0.15,
+        "details": "string"
+      },
+      "naming_coherence": {
+        "score": "number",
+        "weight": 0.10,
+        "details": "string"
+      },
+      "dependency_integrity": {
+        "score": "number",
+        "weight": 0.05,
+        "details": "string"
+      }
+    },
+    "warnings": ["string"],
+    "suggestions": ["string"],
+    "timestamp": "ISO timestamp"
+  }
+  ```
+</ResponseField>
+
+## Validation Criteria
+
+The overall score is calculated as a weighted sum of six criteria:
+
+### 1. Coverage (Weight: 0.25)
+
+**What it measures:** Percentage of PRD features and user stories represented in at least one diagram.
+
+**Calculation:**
+```
+coverage_score = (mapped_elements / total_elements)
+```
+
+**Example checks:**
+- Is feature F001 visualized in any flowchart or sequence diagram?
+- Is user story US015 traceable to a diagram node?
+- Are all acceptance criteria represented visually?
+
+**Target:** ≥ 90% coverage
+
+**Common issues:**
+- Missing user stories in sequence diagrams
+- Features without visual representation
+- Orphaned acceptance criteria
+
+---
+
+### 2. Consistency (Weight: 0.25)
+
+**What it measures:** Consistency of entity definitions, attributes, and relationships across all diagrams.
+
+**Calculation:**
+```
+consistency_score = 1.0 - (inconsistencies / total_cross_references)
+```
+
+**Example checks:**
+- Does the `User` entity have the same attributes in ER and sequence diagrams?
+- Are relationship cardinalities consistent (e.g., User-Order is 1:N everywhere)?
+- Do flow states match state diagram definitions?
+
+**Target:** ≥ 95% consistency
+
+**Common issues:**
+- Entity "Payment" has different attributes in ER vs sequence diagram
+- Relationship "User has Cart" is 1:1 in ER but 1:N in flowchart
+- State names differ between stateDiagram and flowchart nodes
+
+---
+
+### 3. Completeness (Weight: 0.20)
+
+**What it measures:** Presence of both happy paths and error/edge case scenarios in flows.
+
+**Calculation:**
+```
+completeness_score = (paths_with_error_handling / total_paths)
+```
+
+**Example checks:**
+- Does the checkout flow include payment failure scenarios?
+- Are timeout and network error paths documented?
+- Do state diagrams include rollback/cancel transitions?
+
+**Target:** ≥ 85% of paths have error handling
+
+**Common issues:**
+- Missing "payment failed" branch in checkout flow
+- No timeout handling in authentication sequence
+- State diagram lacks "cancel order" transition
+
+---
+
+### 4. Traceability (Weight: 0.15)
+
+**What it measures:** Every diagram node and connection traces back to a specific PRD requirement, feature, or story.
+
+**Calculation:**
+```
+traceability_score = (traceable_elements / total_diagram_elements)
+```
+
+**Example checks:**
+- Can each flowchart node be linked to a PRD section?
+- Are sequence diagram actors defined in personas?
+- Do state transitions map to acceptance criteria?
+
+**Target:** ≥ 95% traceability
+
+**Common issues:**
+- Flowchart node "Verify inventory" has no PRD requirement
+- Sequence actor "Notification Service" not mentioned in PRD
+- State transition undocumented in feature description
+
+---
+
+### 5. Naming Coherence (Weight: 0.10)
+
+**What it measures:** Consistency of terminology and naming conventions across all artifacts.
+
+**Calculation:**
+```
+naming_score = 1.0 - (naming_conflicts / total_named_elements)
+```
+
+**Example checks:**
+- Is it "User" or "Customer" or "Usuário"?
+- Are acronyms used consistently (API vs Api)?
+- Do entity names match between code and diagrams?
+
+**Target:** ≥ 95% naming consistency
+
+**Common issues:**
+- Entity called "User" in ER but "Customer" in sequence diagram
+- Mixing English/Portuguese terms ("Usuário" vs "User")
+- Inconsistent capitalization ("OrderItem" vs "Order_Item")
+
+---
+
+### 6. Dependency Integrity (Weight: 0.05)
+
+**What it measures:** Feature dependencies are respected in flow sequences and state transitions.
+
+**Calculation:**
+```
+dependency_score = (valid_sequences / total_sequences)
+```
+
+**Example checks:**
+- Is feature F002 only shown after F001 (its dependency)?
+- Do flows respect prerequisite steps?
+- Are dependent features properly linked in Gantt charts?
+
+**Target:** 100% dependency integrity
+
+**Common issues:**
+- Checkout flow appears before authentication (dependency)
+- Feature F005 shown in timeline before F004 (its prerequisite)
+- State transition assumes previous state not yet defined
+
+---
+
+## Score Calculation Formula
+
+```
+overall_score = (coverage × 0.25) + 
+                (consistency × 0.25) + 
+                (completeness × 0.20) + 
+                (traceability × 0.15) + 
+                (naming_coherence × 0.10) + 
+                (dependency_integrity × 0.05)
+```
+
+## Validation Modes
+
+### Interactive Mode
+
+```yaml
+validation_mode: interactive
+```
+
+**Flow:**
+1. Present diagram #1 with its individual score
+2. Wait for user input: `approve` | `reject` | `modify`
+3. If `modify`: collect feedback and return to Phase 2 (Mermaid Gen)
+4. If `approve`: proceed to next diagram
+5. If `reject`: mark diagram for regeneration
+6. Repeat for all diagrams
+7. Final decision: proceed to Figma if all approved
+
+**Best for:** First-time runs, complex projects, team collaboration
+
+---
+
+### Batch Mode
+
+```yaml
+validation_mode: batch
+```
+
+**Flow:**
+1. Present all diagrams together
+2. Show consolidated validation report
+3. Wait for user input: `approve_all` | `reject_all` | `select`
+4. If `select`: user chooses which diagrams to approve/reject
+5. Regenerate rejected diagrams with aggregated feedback
+6. Single decision point for entire batch
+
+**Best for:** Reviewing many diagrams, batch approvals, fast iteration
+
+---
+
+### Auto Mode
+
+```yaml
+validation_mode: auto
+validation_threshold: 0.85
+```
+
+**Flow:**
+1. Calculate overall_score
+2. If `overall_score >= threshold`: status = "approved", proceed to Phase 4 (Figma)
+3. If `overall_score < threshold`: status = "rejected", generate feedback report
+4. Return to Phase 2 with specific improvement suggestions
+5. No human intervention required
+
+**Best for:** CI/CD pipelines, well-calibrated projects, automated workflows
+
+---
+
+## Example Validation Report
+
+```json
+{
+  "overall_score": 0.91,
+  "status": "approved",
+  "breakdown": {
+    "coverage": {
+      "score": 0.95,
+      "weight": 0.25,
+      "details": "19/20 features covered. Missing: F020 (Admin Dashboard)"
+    },
+    "consistency": {
+      "score": 0.88,
+      "weight": 0.25,
+      "details": "Payment entity has 3 attribute mismatches between ER and sequence diagrams"
+    },
+    "completeness": {
+      "score": 0.90,
+      "weight": 0.20,
+      "details": "18/20 flows include error paths. Missing: Password Recovery, Guest Checkout"
+    },
+    "traceability": {
+      "score": 0.93,
+      "weight": 0.15,
+      "details": "All elements traceable except US018 (Social Login)"
+    },
+    "naming_coherence": {
+      "score": 0.92,
+      "weight": 0.10,
+      "details": "2 naming conflicts: 'User' vs 'Usuário', 'ShoppingCart' vs 'Cart'"
+    },
+    "dependency_integrity": {
+      "score": 0.98,
+      "weight": 0.05,
+      "details": "All dependencies respected. Warning: F012 appears before F011 in gantt chart"
+    }
+  },
+  "warnings": [
+    "Payment entity uses 'method' in ER but 'payment_type' in sequence diagram",
+    "User story US018 (Social Login) has no visual representation",
+    "Password Recovery flow missing error path for 'email not found'",
+    "Naming inconsistency: 'User' in English vs 'Usuário' in Portuguese diagrams"
+  ],
+  "suggestions": [
+    "Standardize Payment entity to use 'payment_method' across all diagrams",
+    "Add US018 to authentication sequence diagram",
+    "Add error branch to Password Recovery flowchart",
+    "Choose one language (English or Portuguese) for all entity names",
+    "Add F020 (Admin Dashboard) to at least one diagram",
+    "Reorder F012 to appear after F011 in project timeline"
+  ],
+  "timestamp": "2026-03-09T10:15:30Z"
+}
+```
+
+## Best Practices
+
+### Set Appropriate Thresholds
+- **First project:** Start with `validation_threshold: 0.75` and increase as team matures
+- **Production systems:** Use `0.85-0.90` for critical projects
+- **Prototypes:** Can lower to `0.70` for speed
+
+### Use Interactive Mode Initially
+Run in `interactive` mode first to understand common issues, then switch to `auto` once patterns are established.
+
+### Address High-Weight Criteria First
+Focus on **Coverage** (25%) and **Consistency** (25%) before minor naming issues.
+
+### Review Suggestions
+Even if validation passes, review the `suggestions` array for improvement opportunities.
+
+### Iterate on Feedback
+When diagrams are rejected, use the detailed feedback to improve the PRD or diagram generation rules.
+
+## Error Handling
+
+| Scenario | Behavior |
+|----------|----------|
+| Missing parsed_prd | Throws error, cannot validate without source of truth |
+| Empty diagrams array | Warning, assumes nothing to validate |
+| Invalid validation_mode | Defaults to `interactive` with warning |
+| threshold out of range | Clamps to 0.0-1.0 range with warning |
+| Score calculation fails | Individual criterion gets 0.0, logged |
+
+## Integration
+
+The Logic Validator runs automatically as Phase 3:
+
+```bash
+skills run omni-architect \
+  --prd_source "./docs/my-prd.md" \
+  --validation_mode "auto" \
+  --validation_threshold 0.85 \
+  --project_name "My Project" \
+  --figma_file_key "abc123" \
+  --figma_access_token "$FIGMA_TOKEN"
+```
+
+If validation passes, the pipeline proceeds to Phase 4 (Figma Generator). If rejected, returns to Phase 2 with detailed feedback.

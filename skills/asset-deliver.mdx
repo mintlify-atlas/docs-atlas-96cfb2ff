@@ -1,0 +1,485 @@
+---
+title: 'Asset Delivery'
+description: 'Consolidates all pipeline outputs into a structured delivery package'
+---
+
+# Asset Delivery
+
+The **Asset Delivery** skill is Phase 5 (final phase) of the Omni Architect pipeline. It consolidates all outputs from previous phases into a structured delivery package with comprehensive documentation, logs, and handoff materials ready for development teams.
+
+## Purpose
+
+Creates a complete, organized deliverable package containing:
+
+- **Parsed PRD** in structured JSON format
+- **Mermaid Diagrams** with source code and rendered images
+- **Validation Reports** with scores and quality metrics
+- **Figma Asset Links** with direct URLs and previews
+- **Orchestration Logs** with complete pipeline timeline and metrics
+- **Design Handoff Documentation** for developers
+
+All sensitive data (tokens, credentials) is automatically sanitized before inclusion in logs.
+
+## Inputs
+
+<ParamField path="parsed_prd" type="object" required>
+  The structured PRD from Phase 1 (PRD Parser). Contains features, entities, stories, flows, and requirements.
+</ParamField>
+
+<ParamField path="diagrams" type="array" required>
+  Array of generated and validated diagrams from Phase 2 (Mermaid Generator). Includes Mermaid source code and metadata.
+</ParamField>
+
+<ParamField path="validation_report" type="object" required>
+  Validation analysis from Phase 3 (Logic Validator). Contains scores, status, breakdown, warnings, and suggestions.
+</ParamField>
+
+<ParamField path="figma_assets" type="array" required>
+  Array of Figma assets created in Phase 4 (Figma Generator). Includes node IDs, URLs, and preview links.
+</ParamField>
+
+## Outputs
+
+<ResponseField name="delivery_package" type="object">
+  Complete delivery package with all artifacts and documentation.
+  
+  **Structure:**
+  ```json
+  {
+    "project_name": "string",
+    "generated_at": "ISO timestamp",
+    "pipeline_version": "string",
+    "artifacts": {
+      "prd": "object",
+      "diagrams": "array",
+      "validation": "object",
+      "figma": "array"
+    },
+    "file_paths": {
+      "parsed_prd_json": "string",
+      "diagrams_directory": "string",
+      "validation_report_json": "string",
+      "validation_report_md": "string",
+      "figma_assets_json": "string",
+      "orchestration_log": "string",
+      "handoff_doc": "string"
+    },
+    "metrics": {
+      "total_duration_ms": "number",
+      "phase_durations": "object",
+      "feature_count": "number",
+      "diagram_count": "number",
+      "figma_asset_count": "number",
+      "validation_score": "number"
+    },
+    "status": "success|partial|failed",
+    "issues": "array"
+  }
+  ```
+</ResponseField>
+
+## Generated Artifacts
+
+The delivery package creates the following file structure:
+
+```
+output/
+├── parsed-prd.json
+├── diagrams/
+│   ├── flowchart-checkout.mmd
+│   ├── flowchart-checkout.svg
+│   ├── flowchart-checkout.png
+│   ├── sequence-registration.mmd
+│   ├── sequence-registration.svg
+│   ├── sequence-registration.png
+│   ├── er-domain-model.mmd
+│   ├── er-domain-model.svg
+│   ├── er-domain-model.png
+│   └── index.json
+├── validation/
+│   ├── validation-report.json
+│   └── validation-report.md
+├── figma-assets.json
+├── orchestration-log.json
+└── HANDOFF.md
+```
+
+### Artifact Details
+
+| Artifact | Format | Location | Description |
+|----------|--------|----------|-------------|
+| **PRD Parseado** | JSON | `output/parsed-prd.json` | Structured PRD with features, entities, stories, flows |
+| **Diagramas Mermaid** | .mmd + .svg + .png | `output/diagrams/` | Source code + vector + raster renderings |
+| **Índice de Diagramas** | JSON | `output/diagrams/index.json` | Metadata for all diagrams |
+| **Relatório de Validação** | JSON + Markdown | `output/validation/` | Scores, breakdown, warnings, suggestions |
+| **Figma Assets** | JSON | `output/figma-assets.json` | Links, previews, node IDs for all Figma assets |
+| **Orchestration Log** | JSON | `output/orchestration-log.json` | Complete pipeline execution log with metrics |
+| **Design Handoff Doc** | Markdown | `output/HANDOFF.md` | Developer-ready documentation |
+
+## Sanitization & Security
+
+All sensitive information is automatically removed from logs:
+
+### Redacted Fields
+```json
+{
+  "figma_access_token": "[REDACTED]",
+  "api_keys": "[REDACTED]",
+  "secrets": "[REDACTED]",
+  "passwords": "[REDACTED]",
+  "auth_headers": "[REDACTED]"
+}
+```
+
+### Safe to Commit
+After sanitization, all files in `output/` are safe to commit to version control.
+
+## Orchestration Log Structure
+
+The `orchestration-log.json` provides complete pipeline visibility:
+
+```json
+{
+  "project": "E-Commerce Platform",
+  "executed_at": "2026-03-09T10:00:00Z",
+  "pipeline_version": "1.0.0",
+  "phases": [
+    {
+      "phase": 1,
+      "name": "PRD Parser",
+      "started_at": "2026-03-09T10:00:00Z",
+      "completed_at": "2026-03-09T10:00:15Z",
+      "duration_ms": 15000,
+      "status": "success",
+      "outputs": {
+        "features_extracted": 20,
+        "entities_extracted": 8,
+        "completeness_score": 0.87
+      },
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "phase": 2,
+      "name": "Mermaid Generator",
+      "started_at": "2026-03-09T10:00:15Z",
+      "completed_at": "2026-03-09T10:00:45Z",
+      "duration_ms": 30000,
+      "status": "success",
+      "outputs": {
+        "diagrams_generated": 6,
+        "diagram_types": ["flowchart", "sequence", "erDiagram", "stateDiagram"],
+        "average_coverage_pct": 92
+      },
+      "warnings": ["Flowchart 'Admin Dashboard' exceeds 50 nodes, auto-split applied"],
+      "errors": []
+    },
+    {
+      "phase": 3,
+      "name": "Logic Validator",
+      "started_at": "2026-03-09T10:00:45Z",
+      "completed_at": "2026-03-09T10:01:00Z",
+      "duration_ms": 15000,
+      "status": "success",
+      "outputs": {
+        "overall_score": 0.91,
+        "validation_status": "approved",
+        "warnings_count": 4,
+        "suggestions_count": 6
+      },
+      "warnings": ["Payment entity has naming inconsistency"],
+      "errors": []
+    },
+    {
+      "phase": 4,
+      "name": "Figma Generator",
+      "started_at": "2026-03-09T10:01:00Z",
+      "completed_at": "2026-03-09T10:02:30Z",
+      "duration_ms": 90000,
+      "status": "success",
+      "outputs": {
+        "assets_created": 12,
+        "pages_created": 6,
+        "components_created": 24,
+        "design_system": "material-3"
+      },
+      "warnings": [],
+      "errors": []
+    },
+    {
+      "phase": 5,
+      "name": "Asset Delivery",
+      "started_at": "2026-03-09T10:02:30Z",
+      "completed_at": "2026-03-09T10:02:45Z",
+      "duration_ms": 15000,
+      "status": "success",
+      "outputs": {
+        "artifacts_generated": 7,
+        "output_directory": "output/"
+      },
+      "warnings": [],
+      "errors": []
+    }
+  ],
+  "summary": {
+    "total_duration_ms": 165000,
+    "total_duration_human": "2m 45s",
+    "status": "success",
+    "features_processed": 20,
+    "diagrams_generated": 6,
+    "figma_assets_created": 12,
+    "validation_score": 0.91
+  },
+  "metrics": {
+    "prd_completeness": 0.87,
+    "diagram_coverage": 0.92,
+    "validation_score": 0.91,
+    "figma_generation_rate": "7.5 assets/min"
+  }
+}
+```
+
+## Design Handoff Document
+
+The `HANDOFF.md` provides developer-ready documentation:
+
+```markdown
+# Design Handoff: E-Commerce Platform
+
+Generated by Omni Architect on 2026-03-09
+
+## Project Overview
+
+**Project:** E-Commerce Platform  
+**PRD Completeness:** 87%  
+**Validation Score:** 0.91 (approved)  
+**Total Features:** 20  
+**Total Diagrams:** 6  
+**Figma Assets:** 12  
+
+## Quick Links
+
+- [Figma File](https://figma.com/file/abc123XYZ)
+- [PRD Document](./parsed-prd.json)
+- [Validation Report](./validation/validation-report.md)
+
+## Features
+
+### F001: User Authentication
+- **Priority:** High
+- **Complexity:** Medium
+- **User Stories:** US001, US002
+- **Diagrams:** 
+  - [Flowchart: Authentication Flow](./diagrams/flowchart-auth.svg)
+  - [Sequence: User Login](./diagrams/sequence-login.svg)
+- **Figma Assets:**
+  - [User Flow: Authentication](https://figma.com/file/abc123?node-id=123:456)
+  - [Interaction Spec: Login](https://figma.com/file/abc123?node-id=789:012)
+
+### F002: Checkout Process
+- **Priority:** High
+- **Complexity:** High
+- **Dependencies:** F001 (User Authentication)
+- **User Stories:** US015, US016, US017
+- **Diagrams:**
+  - [Flowchart: Checkout Flow](./diagrams/flowchart-checkout.svg)
+  - [State Diagram: Order States](./diagrams/state-order.svg)
+- **Figma Assets:**
+  - [User Flow: Checkout](https://figma.com/file/abc123?node-id=345:678)
+
+## Data Model
+
+**Diagram:** [ER: Domain Model](./diagrams/er-domain-model.svg)  
+**Figma:** [Data Model Documentation](https://figma.com/file/abc123?node-id=901:234)
+
+### Key Entities
+
+- **User** - Customer accounts with authentication
+- **Product** - Catalog items with pricing and inventory
+- **Order** - Purchase transactions with items and payment
+- **Cart** - Shopping cart for guest and authenticated users
+
+## Implementation Notes
+
+### Authentication (F001)
+- Use JWT tokens for session management
+- Implement OAuth2 for social login (US002)
+- Password requirements: min 8 chars, 1 uppercase, 1 number, 1 special
+
+### Checkout (F002)
+- Payment gateway integration required (Stripe recommended)
+- Real-time shipping calculation via carrier APIs
+- Email confirmation sent asynchronously
+- Inventory reserved during checkout, released after 30min timeout
+
+## Validation Warnings
+
+1. Payment entity has naming inconsistency between diagrams
+2. User story US018 (Social Login) missing visual representation
+3. Password Recovery flow missing error path for 'email not found'
+
+**Recommendation:** Review these items before implementation.
+
+## Design System
+
+**Base:** Material Design 3  
+**Primary Color:** #6750A4  
+**Font Family:** Roboto  
+
+[See full design tokens](./figma-assets.json)
+
+## Next Steps
+
+1. Review Figma assets with design team
+2. Address validation warnings
+3. Set up repository structure
+4. Begin implementation of F001 (prerequisite for F002)
+5. Configure CI/CD pipeline
+
+## Support
+
+For questions about this handoff:
+- PRD issues: Review `parsed-prd.json` and original PRD document
+- Diagram questions: Check `diagrams/` directory
+- Figma access: Verify permissions on file `abc123XYZ`
+- Pipeline issues: See `orchestration-log.json` for details
+```
+
+## Metrics Tracking
+
+The delivery package includes comprehensive metrics:
+
+### Quality Metrics
+```json
+{
+  "prd_completeness": 0.87,
+  "diagram_coverage": 0.92,
+  "validation_score": 0.91,
+  "feature_coverage": 0.95
+}
+```
+
+### Performance Metrics
+```json
+{
+  "total_duration_ms": 165000,
+  "phase_durations": {
+    "prd_parse": 15000,
+    "mermaid_gen": 30000,
+    "logic_validate": 15000,
+    "figma_gen": 90000,
+    "asset_deliver": 15000
+  },
+  "figma_generation_rate": "7.5 assets/min",
+  "diagram_generation_rate": "5.0 diagrams/min"
+}
+```
+
+### Volume Metrics
+```json
+{
+  "features_processed": 20,
+  "user_stories_processed": 45,
+  "entities_extracted": 8,
+  "diagrams_generated": 6,
+  "figma_assets_created": 12,
+  "figma_components_created": 24
+}
+```
+
+## Example Delivery Package
+
+```json
+{
+  "project_name": "E-Commerce Platform",
+  "generated_at": "2026-03-09T10:02:45Z",
+  "pipeline_version": "1.0.0",
+  "artifacts": {
+    "prd": { /* parsed PRD object */ },
+    "diagrams": [ /* array of diagram objects */ ],
+    "validation": { /* validation report object */ },
+    "figma": [ /* array of figma asset objects */ ]
+  },
+  "file_paths": {
+    "parsed_prd_json": "output/parsed-prd.json",
+    "diagrams_directory": "output/diagrams/",
+    "validation_report_json": "output/validation/validation-report.json",
+    "validation_report_md": "output/validation/validation-report.md",
+    "figma_assets_json": "output/figma-assets.json",
+    "orchestration_log": "output/orchestration-log.json",
+    "handoff_doc": "output/HANDOFF.md"
+  },
+  "metrics": {
+    "total_duration_ms": 165000,
+    "phase_durations": {
+      "prd_parse": 15000,
+      "mermaid_gen": 30000,
+      "logic_validate": 15000,
+      "figma_gen": 90000,
+      "asset_deliver": 15000
+    },
+    "feature_count": 20,
+    "diagram_count": 6,
+    "figma_asset_count": 12,
+    "validation_score": 0.91
+  },
+  "status": "success",
+  "issues": []
+}
+```
+
+## Best Practices
+
+### Review the Handoff Document First
+The `HANDOFF.md` is designed for quick developer onboarding. Start there before diving into raw JSON files.
+
+### Commit Delivery Package to Git
+All files are sanitized and safe to version control. Tag releases:
+```bash
+git add output/
+git commit -m "feat: add design handoff for v1.0"
+git tag design-handoff-v1.0
+```
+
+### Share Figma Links with Team
+Extract Figma URLs from `figma-assets.json` and share in:
+- Project documentation
+- Jira/Linear tickets
+- Slack/Teams channels
+
+### Use Metrics for Retrospectives
+Track metrics across sprints:
+- Validation scores trending up = better PRD quality
+- Generation times trending down = pipeline optimization
+
+### Archive Old Deliveries
+Create timestamped directories:
+```bash
+mv output/ archive/output-2026-03-09/
+```
+
+## Error Handling
+
+| Scenario | Behavior |
+|----------|----------|
+| Output directory exists | Prompts for overwrite confirmation (or --force flag) |
+| Disk space insufficient | Error with required space calculation |
+| File write permissions | Error with permission requirements |
+| Mermaid render fails | Includes .mmd source, skips .svg/.png with warning |
+| Missing input artifacts | Partial package with clear status in delivery_package.issues |
+
+## Integration
+
+Asset Delivery runs automatically as Phase 5 (final):
+
+```bash
+skills run omni-architect \
+  --prd_source "./docs/my-prd.md" \
+  --project_name "E-Commerce Platform" \
+  --figma_file_key "abc123XYZ" \
+  --figma_access_token "$FIGMA_TOKEN"
+
+# Output will be in: ./output/
+```
+
+Access the complete delivery package at `./output/` with all artifacts ready for handoff.

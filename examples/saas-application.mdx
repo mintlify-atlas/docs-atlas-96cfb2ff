@@ -1,0 +1,454 @@
+---
+title: 'SaaS Application'
+description: 'Build a multi-tenant SaaS onboarding flow with Omni Architect'
+icon: 'cloud'
+---
+
+## Overview
+
+This example demonstrates using Omni Architect for a B2B SaaS application with complex onboarding flows, role-based access control, and subscription management.
+
+## Use Case
+
+We're building a project management SaaS platform with:
+- Multi-tenant architecture
+- Team-based workspaces
+- Subscription tiers (Free, Pro, Enterprise)
+- Rich onboarding flow for new organizations
+
+## The PRD
+
+```markdown prd-saas.md
+# PRD: Project Management SaaS Platform
+
+## Feature: Organization Onboarding
+
+### User Story
+As a **team admin**, I want to **set up my organization workspace in under 5 minutes**,
+so that my team can **start collaborating immediately**.
+
+### Flow
+1. Sign up with work email
+2. Verify email
+3. Create organization profile
+4. Invite team members
+5. Select subscription tier
+6. Set up first project
+7. Configure integrations (Slack, GitHub)
+
+### Acceptance Criteria
+- [ ] Email verification within 2 minutes
+- [ ] Bulk team invite (up to 50 emails)
+- [ ] Trial period: 14 days free Pro tier
+- [ ] Integration setup optional but guided
+- [ ] Progress saved at each step
+
+### Entities
+| Entity | Attributes |
+|--------|------------|
+| Organization | id, name, slug, subscription_tier, trial_ends_at |
+| User | id, email, name, role, organization_id |
+| Workspace | id, organization_id, name, settings |
+| Project | id, workspace_id, name, status, owner_id |
+| Invitation | id, email, organization_id, role, status, token |
+| Subscription | id, organization_id, tier, status, billing_cycle |
+```
+
+## Running the Pipeline
+
+<Steps>
+  <Step title="Configure for SaaS workflow">
+    Create `.omni-architect.yml` with SaaS-specific settings:
+    
+    ```yaml
+    project_name: "Project Management SaaS"
+    design_system: "tailwind"
+    locale: "en-US"
+    validation_mode: "batch"
+    validation_threshold: 0.88
+    
+    diagram_types:
+      - flowchart
+      - sequence
+      - erDiagram
+      - stateDiagram
+      - journey
+    
+    design_tokens:
+      colors:
+        primary: "#6366F1"
+        secondary: "#8B5CF6"
+        success: "#10B981"
+        error: "#EF4444"
+      typography:
+        font_family: "Inter"
+        heading_size: 28
+        body_size: 16
+    ```
+  </Step>
+
+  <Step title="Execute with journey mapping">
+    ```bash
+    skills run omni-architect \
+      --prd_source "./docs/prd-saas.md" \
+      --figma_file_key "xyz789ABC" \
+      --figma_access_token "$FIGMA_TOKEN"
+    ```
+    
+    The config file provides the rest of the settings.
+  </Step>
+
+  <Step title="Review in batch mode">
+    All diagrams are presented together for approval:
+    
+    ```
+    📊 5 diagrams generated:
+    ✓ Onboarding Flowchart (score: 0.94)
+    ✓ Signup Sequence (score: 0.91)
+    ✓ Subscription State Machine (score: 0.89)
+    ✓ Domain ER Diagram (score: 0.92)
+    ✓ User Journey Map (score: 0.90)
+    
+    Overall score: 0.91 (threshold: 0.88) ✓
+    
+    [A]pprove all | [R]eject all | [S]elect individual?
+    ```
+  </Step>
+
+  <Step title="Generate Figma assets">
+    After approval, assets are created with Tailwind design system.
+  </Step>
+</Steps>
+
+## Generated Diagrams
+
+### Flowchart: Onboarding Flow
+
+```mermaid
+flowchart TD
+    Start(["New User Signup"]) --> Email["Enter Work Email"]
+    Email --> Verify["Verify Email"]
+    Verify --> Check{"Verified?"}
+    Check -->|No| Resend["Resend Link"]
+    Resend --> Verify
+    Check -->|Yes| OrgProfile["Create Organization"]
+    OrgProfile --> TeamInvite["Invite Team Members"]
+    TeamInvite --> Skip{"Skip invites?"}
+    Skip -->|No| SendInvites["Send Invitations"]
+    Skip -->|Yes| SelectPlan["Select Plan"]
+    SendInvites --> SelectPlan
+    SelectPlan --> Trial{"Start Trial?"}
+    Trial -->|Yes| FirstProject["Create First Project"]
+    Trial -->|No| Payment["Enter Payment"]
+    Payment --> FirstProject
+    FirstProject --> Integrations["Setup Integrations"]
+    Integrations --> Complete(["Dashboard"])
+    
+    style Start fill:#6366F1,stroke:#333,color:#fff
+    style Complete fill:#10B981,stroke:#333,color:#fff
+    style Check fill:#F59E0B,stroke:#333,color:#fff
+    style Trial fill:#F59E0B,stroke:#333,color:#fff
+```
+
+### State Diagram: Subscription States
+
+```mermaid
+stateDiagram-v2
+    [*] --> Trial: Sign Up
+    Trial --> Active: Subscribe
+    Trial --> Expired: 14 Days
+    Active --> PastDue: Payment Failed
+    Active --> Cancelled: User Cancels
+    PastDue --> Active: Payment Received
+    PastDue --> Cancelled: Grace Period Expired
+    Cancelled --> Active: Resubscribe
+    Expired --> Active: Subscribe
+    Active --> [*]: Account Deleted
+    Cancelled --> [*]: Account Deleted
+    
+    note right of Trial
+        Free Pro features
+        for 14 days
+    end note
+    
+    note right of PastDue
+        7-day grace period
+        before cancellation
+    end note
+```
+
+### Journey Map: First-Time User
+
+```mermaid
+journey
+    title New Organization Admin Journey
+    section Discovery
+      Visit landing page: 5: Admin
+      Watch demo video: 4: Admin
+      Sign up for trial: 5: Admin
+    section Setup
+      Verify email: 3: Admin
+      Create organization: 5: Admin
+      Invite team: 4: Admin
+    section Configuration
+      Select plan: 4: Admin
+      Create first project: 5: Admin
+      Setup Slack integration: 3: Admin
+    section Activation
+      Team joins workspace: 5: Admin, Team
+      First task created: 5: Admin, Team
+      First collaboration: 5: Admin, Team
+```
+
+### Sequence Diagram: Team Invitation
+
+```mermaid
+sequenceDiagram
+    actor Admin as Admin User
+    participant UI as Web App
+    participant API as Backend API
+    participant Email as Email Service
+    participant DB as Database
+    actor Member as Invited User
+
+    Admin->>UI: Enter team emails (bulk)
+    UI->>API: POST /invitations/bulk
+    API->>DB: Create invitation records
+    loop For each email
+        API->>Email: Send invitation email
+    end
+    API-->>UI: 201 Created (10 invitations)
+    UI-->>Admin: "Invitations sent ✓"
+    
+    Note over Member: Receives email
+    Member->>Email: Click invitation link
+    Email->>UI: Redirect with token
+    UI->>API: GET /invitations/:token
+    API->>DB: Validate token
+    DB-->>API: Invitation details
+    API-->>UI: Organization info
+    Member->>UI: Accept & create account
+    UI->>API: POST /invitations/:token/accept
+    API->>DB: Create user + link to org
+    API-->>UI: 201 User created
+    UI-->>Member: "Welcome to the team!"
+```
+
+### ER Diagram: Multi-Tenant Schema
+
+```mermaid
+erDiagram
+    ORGANIZATION ||--o{ USER : has
+    ORGANIZATION ||--|| SUBSCRIPTION : subscribes
+    ORGANIZATION ||--o{ WORKSPACE : owns
+    ORGANIZATION ||--o{ INVITATION : sends
+    WORKSPACE ||--o{ PROJECT : contains
+    PROJECT ||--o{ TASK : has
+    USER ||--o{ TASK : assigned
+    USER ||--|| USER : "reports to"
+    
+    ORGANIZATION {
+        uuid id PK
+        string name
+        string slug UK
+        enum subscription_tier
+        datetime trial_ends_at
+        json settings
+    }
+    USER {
+        uuid id PK
+        uuid organization_id FK
+        string email UK
+        string name
+        enum role
+        uuid manager_id FK
+        datetime created_at
+    }
+    SUBSCRIPTION {
+        uuid id PK
+        uuid organization_id FK
+        enum tier
+        enum status
+        enum billing_cycle
+        datetime current_period_end
+    }
+    WORKSPACE {
+        uuid id PK
+        uuid organization_id FK
+        string name
+        json settings
+    }
+    PROJECT {
+        uuid id PK
+        uuid workspace_id FK
+        string name
+        enum status
+        uuid owner_id FK
+    }
+    INVITATION {
+        uuid id PK
+        uuid organization_id FK
+        string email
+        enum role
+        enum status
+        string token UK
+        datetime expires_at
+    }
+```
+
+## Validation Results
+
+```json
+{
+  "overall_score": 0.91,
+  "status": "approved",
+  "breakdown": {
+    "coverage": {
+      "score": 0.94,
+      "details": "All 7 onboarding steps represented"
+    },
+    "consistency": {
+      "score": 0.91,
+      "details": "Entities consistent across all diagrams"
+    },
+    "completeness": {
+      "score": 0.88,
+      "details": "Happy path, skip flows, and error handling covered"
+    },
+    "traceability": {
+      "score": 0.92,
+      "details": "All acceptance criteria mapped to flows"
+    },
+    "naming_coherence": {
+      "score": 0.89,
+      "details": "Consistent naming across diagrams"
+    },
+    "dependency_integrity": {
+      "score": 0.95,
+      "details": "Organization → User → Project hierarchy clear"
+    }
+  },
+  "warnings": [
+    "Consider adding C4 diagram for microservices architecture"
+  ],
+  "suggestions": [
+    "Add payment processing sequence diagram",
+    "Document integration webhooks in separate sequence"
+  ]
+}
+```
+
+## Figma Structure
+
+```
+📁 Project Management SaaS - Omni Architect
+├── 📄 Index
+├── 📄 User Flows
+│   ├── 🖼️ Onboarding Flow (7 steps)
+│   ├── 🖼️ Invitation Flow
+│   └── 🖼️ Subscription Selection
+├── 📄 State Machines
+│   ├── 🖼️ Subscription Lifecycle
+│   └── 🖼️ Project Status States
+├── 📄 User Journeys
+│   ├── 🖼️ Admin First-Time Experience
+│   └── 🖼️ Team Member Onboarding
+├── 📄 Interaction Specs
+│   ├── 🖼️ Bulk Invitation Sequence
+│   └── 🖼️ Email Verification Flow
+├── 📄 Data Model
+│   └── 🖼️ Multi-Tenant Schema
+└── 📄 Component Library
+    ├── 🧩 Tailwind Tokens
+    ├── 🧩 Flow Connectors
+    └── 🧩 State Indicators
+```
+
+## Key Learnings
+
+<AccordionGroup>
+  <Accordion title="Journey Maps for Complex Flows" icon="map">
+    The `journey` diagram type is excellent for visualizing multi-step onboarding experiences and identifying friction points.
+  </Accordion>
+  
+  <Accordion title="State Diagrams for Business Logic" icon="diagram-project">
+    State diagrams clarify subscription lifecycle logic before implementing payment processing.
+  </Accordion>
+  
+  <Accordion title="Batch Validation Mode" icon="list-check">
+    For SaaS applications with multiple interconnected flows, `validation_mode: "batch"` lets you review the complete picture before approval.
+  </Accordion>
+  
+  <Accordion title="Multi-Tenant ER Diagrams" icon="database">
+    Clear entity relationships are critical for multi-tenant architectures. The ER diagram caught a missing `organization_id` FK early.
+  </Accordion>
+</AccordionGroup>
+
+## Performance Metrics
+
+| Metric | Value |
+|--------|-------|
+| **PRD Completeness** | 0.87 |
+| **Diagrams Generated** | 5 |
+| **Validation Score** | 0.91 |
+| **Time to Figma** | 52 seconds |
+| **Figma Assets Created** | 12 frames + component library |
+| **Coverage** | 94% of features |
+
+## Configuration Highlights
+
+<CodeGroup>
+```yaml .omni-architect.yml
+project_name: "Project Management SaaS"
+design_system: "tailwind"
+locale: "en-US"
+validation_mode: "batch"
+validation_threshold: 0.88
+
+diagram_types:
+  - flowchart
+  - sequence
+  - erDiagram
+  - stateDiagram
+  - journey
+
+design_tokens:
+  colors:
+    primary: "#6366F1"
+    secondary: "#8B5CF6"
+    success: "#10B981"
+    error: "#EF4444"
+  typography:
+    font_family: "Inter"
+    heading_size: 28
+    body_size: 16
+```
+
+```bash CLI Command
+skills run omni-architect \
+  --prd_source "./docs/prd-saas.md" \
+  --figma_file_key "xyz789ABC" \
+  --figma_access_token "$FIGMA_TOKEN"
+```
+</CodeGroup>
+
+<Tip>
+For SaaS applications, include journey diagrams to visualize the complete user experience across multiple sessions.
+</Tip>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Mobile App Example" icon="mobile" href="/examples/mobile-app">
+    Learn about mobile-specific flows
+  </Card>
+  <Card title="Custom Workflows" icon="code-branch" href="/examples/custom-workflows">
+    Add hooks for Slack notifications
+  </Card>
+  <Card title="Design Tokens" icon="palette" href="/configuration/design-tokens">
+    Customize Tailwind tokens
+  </Card>
+  <Card title="State Diagrams" icon="diagram-project" href="/configuration/diagram-types">
+    Deep dive on state machines
+  </Card>
+</CardGroup>

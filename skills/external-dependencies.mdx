@@ -1,0 +1,467 @@
+---
+title: 'External Dependencies'
+description: 'Third-party skills leveraged by Omni Architect'
+---
+
+# External Dependencies
+
+Omni Architect is a **meta-skill** that orchestrates five specialized external skills to deliver its complete PRD-to-Figma pipeline. This page documents each external dependency, what it provides, and how it integrates into the workflow.
+
+## Overview
+
+The pipeline leverages best-in-class skills from the agent ecosystem:
+
+| Skill | Source | Purpose | Phase |
+|-------|--------|---------|-------|
+| `mermaid-diagrams` | softaworks/agent-toolkit | Mermaid diagram generation and validation | Phase 2 |
+| `figma` | hoodini/ai-agents-skills | Figma API integration and asset creation | Phase 4 |
+| `prd-generator` | jamesrochabrun/skills | PRD parsing and structure extraction | Phase 1 |
+| `frontend-design` | anthropics/skills | Production-grade frontend design patterns | Phase 4 |
+| `skill-creator` | anthropics/skills | Skill development framework and standards | Infrastructure |
+
+---
+
+## 1. mermaid-diagrams
+
+**Repository:** [softaworks/agent-toolkit](https://github.com/softaworks/agent-toolkit)  
+**Skill Page:** [skills.sh/softaworks/agent-toolkit/mermaid-diagrams](https://skills.sh/softaworks/agent-toolkit/mermaid-diagrams)  
+**License:** MIT
+
+### What It Provides
+
+The `mermaid-diagrams` skill provides comprehensive capabilities for working with Mermaid diagram syntax:
+
+- **Diagram Generation** - Creates valid Mermaid code from structured data
+- **Syntax Validation** - Parses and validates Mermaid syntax before rendering
+- **Multi-Type Support** - Handles flowcharts, sequence diagrams, ER diagrams, state machines, C4, Gantt, and journey maps
+- **Rendering** - Converts Mermaid code to SVG/PNG images
+- **Error Recovery** - Automatic syntax correction for common mistakes
+
+### How Omni Architect Uses It
+
+In **Phase 2 (Mermaid Generator)**, Omni Architect:
+
+1. Passes structured PRD data to `mermaid-diagrams`
+2. Requests specific diagram types (flowchart, sequence, ER, etc.)
+3. Receives validated Mermaid code for each diagram
+4. Uses the skill's validator to ensure syntax correctness
+5. Generates SVG/PNG renders for the delivery package
+
+### Integration Example
+
+```javascript
+const mermaidDiagrams = require('mermaid-diagrams');
+
+const flowchartCode = await mermaidDiagrams.generate({
+  type: 'flowchart',
+  data: {
+    nodes: parsedPRD.flows[0].steps,
+    edges: parsedPRD.flows[0].transitions
+  },
+  options: {
+    direction: 'TD',
+    theme: 'default'
+  }
+});
+
+// Validate syntax
+const isValid = await mermaidDiagrams.validate(flowchartCode);
+
+// Render to image
+const svgImage = await mermaidDiagrams.render(flowchartCode, 'svg');
+```
+
+### Why This Skill
+
+Chosen for:
+- Robust validation engine
+- Support for all Mermaid diagram types
+- Active maintenance and community
+- Clean API for programmatic access
+
+---
+
+## 2. figma
+
+**Repository:** [hoodini/ai-agents-skills](https://github.com/hoodini/ai-agents-skills)  
+**Skill Page:** [skills.sh/hoodini/ai-agents-skills/figma](https://skills.sh/hoodini/ai-agents-skills/figma)  
+**License:** Apache 2.0
+
+### What It Provides
+
+The `figma` skill provides a high-level wrapper around the Figma REST API:
+
+- **Authentication** - Handles token-based API authentication
+- **File Operations** - Create, read, update Figma files and pages
+- **Node Creation** - Generate frames, components, shapes, and text
+- **Styling** - Apply colors, typography, spacing, and design tokens
+- **Auto-Layout** - Configure Figma's auto-layout for responsive designs
+- **Component Libraries** - Create and manage reusable component sets
+- **Rate Limiting** - Built-in exponential backoff and retry logic
+- **Error Handling** - Graceful handling of API errors with clear messages
+
+### How Omni Architect Uses It
+
+In **Phase 4 (Figma Generator)**, Omni Architect:
+
+1. Authenticates using the provided `figma_access_token`
+2. Locates or creates the target file using `figma_file_key`
+3. Creates organized page structure (User Flows, Data Model, etc.)
+4. Maps each Mermaid diagram to Figma frames and components
+5. Applies design system tokens (Material 3, Apple HIG, etc.)
+6. Generates responsive variants for different screen sizes
+7. Adds developer annotations and metadata
+8. Returns node IDs and preview URLs for all created assets
+
+### Integration Example
+
+```javascript
+const figma = require('figma');
+
+// Authenticate
+await figma.authenticate(figmaAccessToken);
+
+// Create page
+const page = await figma.createPage(figmaFileKey, {
+  name: `${projectName} - User Flows`
+});
+
+// Create frame for flowchart
+const frame = await figma.createFrame(page.id, {
+  name: 'Flow: Checkout Process',
+  width: 1440,
+  height: 1024,
+  layout: 'auto'
+});
+
+// Add nodes from diagram
+for (const node of diagramNodes) {
+  await figma.createRectangle(frame.id, {
+    name: node.label,
+    x: node.x,
+    y: node.y,
+    width: 200,
+    height: 80,
+    fills: [{ color: designTokens.colors.primary }],
+    cornerRadius: 8
+  });
+}
+
+// Get preview URL
+const previewUrl = await figma.getThumbnail(frame.id);
+```
+
+### Why This Skill
+
+Chosen for:
+- Comprehensive Figma API coverage
+- Built-in rate limiting and error handling
+- Support for modern Figma features (auto-layout, variants)
+- Well-documented with examples
+
+---
+
+## 3. prd-generator
+
+**Repository:** [jamesrochabrun/skills](https://github.com/jamesrochabrun/skills)  
+**Skill Page:** [skills.sh/jamesrochabrun/skills/prd-generator](https://skills.sh/jamesrochabrun/skills/prd-generator)  
+**License:** MIT
+
+### What It Provides
+
+The `prd-generator` skill specializes in PRD analysis and generation:
+
+- **PRD Parsing** - Extracts semantic structure from Markdown PRDs
+- **Feature Extraction** - Identifies features with priorities and complexity
+- **User Story Recognition** - Parses stories in standard formats
+- **Entity Detection** - Identifies domain entities and attributes via NER
+- **Relationship Mapping** - Maps entity relationships and dependencies
+- **Completeness Scoring** - Calculates PRD quality metrics
+- **Template Generation** - Creates PRD templates for new projects
+- **Multi-Language Support** - Handles PRDs in multiple languages
+
+### How Omni Architect Uses It
+
+In **Phase 1 (PRD Parser)**, Omni Architect:
+
+1. Passes raw PRD Markdown to `prd-generator`
+2. Receives structured output with features, stories, entities
+3. Uses completeness score to determine PRD quality
+4. Incorporates extracted relationships into diagram generation
+5. Leverages feature dependencies for flow sequencing
+
+### Integration Example
+
+```javascript
+const prdGenerator = require('prd-generator');
+
+const prdMarkdown = fs.readFileSync('./docs/prd.md', 'utf-8');
+
+const parsedPRD = await prdGenerator.parse(prdMarkdown, {
+  extractFeatures: true,
+  extractEntities: true,
+  extractStories: true,
+  extractFlows: true,
+  calculateDependencies: true
+});
+
+console.log(`Completeness: ${parsedPRD.completeness_score}`);
+console.log(`Features: ${parsedPRD.features.length}`);
+console.log(`Entities: ${parsedPRD.entities.length}`);
+
+if (parsedPRD.completeness_score < 0.6) {
+  console.warn('PRD quality low:', parsedPRD.warnings);
+}
+```
+
+### Why This Skill
+
+Chosen for:
+- Specialized PRD domain knowledge
+- Accurate feature and story extraction
+- Relationship detection capabilities
+- Quality scoring for validation
+
+---
+
+## 4. frontend-design
+
+**Repository:** [anthropics/skills](https://github.com/anthropics/skills)  
+**Skill Page:** [skills.sh/anthropics/skills/frontend-design](https://skills.sh/anthropics/skills/frontend-design)  
+**License:** MIT
+
+### What It Provides
+
+The `frontend-design` skill offers production-grade design patterns and best practices:
+
+- **Design System Templates** - Pre-built templates for Material, Apple HIG, Tailwind, etc.
+- **Component Patterns** - Reusable UI component structures
+- **Accessibility Guidelines** - WCAG 2.1 AA compliance patterns
+- **Responsive Layouts** - Mobile-first and adaptive design patterns
+- **Design Tokens** - Standardized color, typography, and spacing systems
+- **Animation Curves** - Pre-defined easing functions and transitions
+- **Layout Grids** - Standard grid systems (8pt, 12-column, etc.)
+
+### How Omni Architect Uses It
+
+In **Phase 4 (Figma Generator)**, Omni Architect:
+
+1. Loads design system templates based on `design_system` parameter
+2. Applies component patterns to diagram nodes
+3. Uses design tokens for consistent styling
+4. Implements responsive variants using layout patterns
+5. Ensures accessibility standards in generated assets
+6. Applies standard spacing and typography scales
+
+### Integration Example
+
+```javascript
+const frontendDesign = require('frontend-design');
+
+// Load design system
+const designSystem = await frontendDesign.loadDesignSystem('material-3');
+
+// Apply tokens to Figma components
+const buttonStyle = {
+  fills: [{ color: designSystem.colors.primary }],
+  textStyle: {
+    fontFamily: designSystem.typography.font_family,
+    fontSize: designSystem.typography.body_size,
+    fontWeight: 500
+  },
+  cornerRadius: designSystem.border_radius.medium,
+  padding: {
+    vertical: designSystem.spacing.base * 1.5,
+    horizontal: designSystem.spacing.base * 3
+  }
+};
+
+// Generate responsive variants
+const variants = await frontendDesign.generateResponsiveVariants(frame, {
+  breakpoints: ['mobile', 'tablet', 'desktop'],
+  strategy: 'mobile-first'
+});
+```
+
+### Why This Skill
+
+Chosen for:
+- Production-ready design patterns
+- Multiple design system support
+- Accessibility best practices
+- Maintained by Anthropic (Claude's creators)
+
+---
+
+## 5. skill-creator
+
+**Repository:** [anthropics/skills](https://github.com/anthropics/skills)  
+**Skill Page:** [skills.sh/anthropics/skills/skill-creator](https://skills.sh/anthropics/skills/skill-creator)  
+**License:** MIT
+
+### What It Provides
+
+The `skill-creator` skill provides infrastructure for building agent skills:
+
+- **Skill Templates** - Boilerplate for new skill development
+- **Input/Output Validation** - JSON schema validation for skill interfaces
+- **Skill Composition** - Patterns for orchestrating multiple skills
+- **Error Handling** - Standardized error handling and recovery patterns
+- **Testing Utilities** - Test harnesses for skill development
+- **Documentation Generation** - Auto-generate skill documentation
+- **Skill Registry** - Register and discover skills
+- **Version Management** - Semantic versioning for skills
+
+### How Omni Architect Uses It
+
+As infrastructure for **Orchestration** across all phases:
+
+1. Uses composition patterns to chain Phase 1-5
+2. Validates inputs/outputs between phases using schemas
+3. Implements error recovery and retry logic
+4. Leverages testing utilities for quality assurance
+5. Follows skill standards for consistent interfaces
+
+### Integration Example
+
+```javascript
+const skillCreator = require('skill-creator');
+
+// Define orchestration pipeline
+const pipeline = skillCreator.createPipeline([
+  {
+    phase: 1,
+    skill: 'prd-parse',
+    inputs: ['prd_content'],
+    outputs: ['parsed_prd', 'completeness_score']
+  },
+  {
+    phase: 2,
+    skill: 'mermaid-gen',
+    inputs: ['parsed_prd', 'diagram_types', 'locale'],
+    outputs: ['diagrams']
+  },
+  {
+    phase: 3,
+    skill: 'logic-validate',
+    inputs: ['parsed_prd', 'diagrams', 'validation_mode'],
+    outputs: ['validation_report'],
+    retryOnFail: true
+  },
+  // ... more phases
+]);
+
+// Execute with error handling
+const result = await pipeline.execute({
+  prd_content: prdMarkdown,
+  diagram_types: ['flowchart', 'sequence'],
+  validation_mode: 'auto'
+});
+```
+
+### Why This Skill
+
+Chosen for:
+- Official Anthropic skill framework
+- Robust composition patterns
+- Standard error handling
+- Testing and validation tools
+
+---
+
+## Dependency Installation
+
+All external dependencies are installed automatically when you add Omni Architect:
+
+```bash
+# Install Omni Architect and all dependencies
+npx skills add https://github.com/fabioeloi/omni-architect --skill omni-architect
+```
+
+This single command installs:
+- `omni-architect` (main orchestration skill)
+- `mermaid-diagrams` (from softaworks/agent-toolkit)
+- `figma` (from hoodini/ai-agents-skills)
+- `prd-generator` (from jamesrochabrun/skills)
+- `frontend-design` (from anthropics/skills)
+- `skill-creator` (from anthropics/skills)
+
+### Manual Installation (Optional)
+
+If you want to use individual skills separately:
+
+```bash
+# Mermaid diagrams
+npx skills add https://github.com/softaworks/agent-toolkit --skill mermaid-diagrams
+
+# Figma integration
+npx skills add https://github.com/hoodini/ai-agents-skills --skill figma
+
+# PRD generator
+npx skills add https://github.com/jamesrochabrun/skills --skill prd-generator
+
+# Frontend design
+npx skills add https://github.com/anthropics/skills --skill frontend-design
+
+# Skill creator framework
+npx skills add https://github.com/anthropics/skills --skill skill-creator
+```
+
+## Version Compatibility
+
+Omni Architect has been tested with:
+
+| Dependency | Min Version | Recommended | Notes |
+|------------|-------------|-------------|-------|
+| `mermaid-diagrams` | 1.0.0 | 1.2.0+ | Requires syntax validation support |
+| `figma` | 2.0.0 | 2.5.0+ | Requires auto-layout API support |
+| `prd-generator` | 1.0.0 | 1.1.0+ | Entity extraction added in 1.1.0 |
+| `frontend-design` | 1.0.0 | Latest | Material 3 support in latest |
+| `skill-creator` | 1.0.0 | Latest | Pipeline composition in latest |
+
+## Troubleshooting Dependencies
+
+### Check Installed Skills
+```bash
+skills list
+```
+
+### Update All Dependencies
+```bash
+skills update
+```
+
+### Verify Skill Versions
+```bash
+skills info mermaid-diagrams
+skills info figma
+skills info prd-generator
+```
+
+### Clear Skill Cache
+```bash
+skills cache clear
+skills reinstall omni-architect
+```
+
+## Contributing
+
+If you maintain one of these dependency skills and want to improve Omni Architect integration:
+
+1. Ensure your skill follows [agentskills.io](https://agentskills.io) standards
+2. Provide clear input/output schemas
+3. Document error codes and handling
+4. Support versioned APIs
+5. Open an issue in [omni-architect](https://github.com/fabioeloi/omni-architect/issues)
+
+## License Attribution
+
+Omni Architect respects all dependency licenses:
+
+- `mermaid-diagrams`: MIT License
+- `figma`: Apache 2.0 License
+- `prd-generator`: MIT License
+- `frontend-design`: MIT License
+- `skill-creator`: MIT License
+
+See individual repositories for full license texts.

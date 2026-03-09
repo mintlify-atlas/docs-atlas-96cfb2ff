@@ -1,0 +1,429 @@
+---
+title: Figma Generator
+description: Generate design assets in Figma from validated diagrams
+icon: figma
+---
+
+## Overview
+
+The **Figma Generator** is Phase 4 of the Omni Architect pipeline. It transforms validated Mermaid diagrams into organized, styled design assets within a Figma file, creating frames, components, flows, and developer annotations using the Figma REST API.
+
+<Info>
+**Version**: 1.0.0  
+**Author**: fabioeloi  
+**Pipeline Phase**: 4 of 5
+</Info>
+
+## Purpose
+
+The Figma Generator bridges the gap between validated product logic and visual design. By automatically creating structured Figma assets, it eliminates manual translation work and ensures design assets directly reflect validated requirements.
+
+## Inputs & Outputs
+
+### Inputs
+
+<ParamField path="diagrams" type="array" required>
+  Array of validated Mermaid diagrams with `status=approved` from Phase 3 (Logic Validator).
+</ParamField>
+
+<ParamField path="figma_file_key" type="string" required>
+  The Figma file key extracted from the Figma URL:
+  `https://www.figma.com/file/<FILE_KEY>/...`
+</ParamField>
+
+<ParamField path="figma_access_token" type="string" required>
+  Personal access token from Figma with write permissions. Generate at:
+  [Figma Account Settings → Personal Access Tokens](https://www.figma.com/developers/api#access-tokens)
+</ParamField>
+
+<ParamField path="design_system" type="string" default="material-3">
+  Base design system for styling components:
+  - `material-3`: Google Material Design 3
+  - `apple-hig`: Apple Human Interface Guidelines
+  - `tailwind`: Tailwind CSS design tokens
+  - `custom`: Use custom design tokens from config
+</ParamField>
+
+<ParamField path="project_name" type="string" required>
+  Project name used as the prefix for all generated pages and components in Figma.
+</ParamField>
+
+### Outputs
+
+<ParamField path="figma_assets" type="array">
+  Array of created Figma assets, each containing:
+  - **node_id**: Figma node identifier for the created element
+  - **type**: Asset type (page, frame, component, flow)
+  - **name**: Human-readable name
+  - **preview_url**: PNG preview image URL
+  - **figma_url**: Direct link to the asset in Figma
+</ParamField>
+
+## Diagram-to-Asset Mapping
+
+| Mermaid Diagram | Figma Asset | Description |
+|-----------------|-------------|-------------|
+| `flowchart` | User Flow Page | Wireframe representations of screens with navigation arrows |
+| `sequenceDiagram` | Interaction Spec Component | Detailed interaction specifications per screen/component |
+| `erDiagram` | Data Model Documentation | Visual data model documentation with entity cards |
+| `stateDiagram` | State Management Component | UI state visualization showing component states |
+| `C4Context` | Architecture Overview Page | Stylized architectural diagram with system boundaries |
+| `journey` | User Journey Map Frame | Visual user journey with touchpoints and emotions |
+
+## Generation Process
+
+<Steps>
+  <Step title="Connect to Figma API">
+    Authenticate using `figma_access_token` and establish connection to Figma REST API v1.
+  </Step>
+  
+  <Step title="Create/Locate Project Page">
+    Check if project page exists in the file; create new page named `{project_name} - Omni Architect` if not found.
+  </Step>
+  
+  <Step title="Create Frame Structure">
+    For each diagram, create a top-level Frame with auto-layout enabled and appropriate spacing.
+  </Step>
+  
+  <Step title="Map Nodes to Components">
+    Transform each Mermaid node into a Figma component:
+    - Decision nodes → Diamond shapes with conditional text
+    - Process nodes → Rectangle components with rounded corners
+    - Actors → Person icons with labels
+    - Entities → Table-like structures with attribute rows
+  </Step>
+  
+  <Step title="Apply Design Tokens">
+    Apply design system tokens for:
+    - **Colors**: Primary, secondary, success, error, warning
+    - **Typography**: Font family, sizes, weights
+    - **Spacing**: Padding, margins, gaps using base scale
+  </Step>
+  
+  <Step title="Create Visual Connections">
+    Draw arrows and lines between components to represent flow relationships using vector networks.
+  </Step>
+  
+  <Step title="Generate Responsive Variants">
+    If flowchart represents UI screens, create mobile, tablet, and desktop variants with appropriate breakpoints.
+  </Step>
+  
+  <Step title="Add Developer Annotations">
+    Create annotation components with:
+    - Feature ID references
+    - User story IDs
+    - Acceptance criteria
+    - Technical notes
+  </Step>
+  
+  <Step title="Create Index Page">
+    Generate a navigation index page with clickable links to all created frames.
+  </Step>
+</Steps>
+
+## Figma File Structure
+
+The generator creates an organized hierarchy:
+
+```
+📁 {project_name} - Omni Architect
+├── 📄 Index (Navigation Page)
+│   ├── 🔗 Link to User Flows
+│   ├── 🔗 Link to Interaction Specs
+│   ├── 🔗 Link to Data Model
+│   ├── 🔗 Link to Architecture
+│   └── 🔗 Link to User Journeys
+├── 📄 User Flows
+│   ├── 🖼️ Frame: Checkout Flow
+│   ├── 🖼️ Frame: Authentication Flow
+│   └── 🖼️ Frame: Product Search Flow
+├── 📄 Interaction Specs
+│   ├── 🖼️ Frame: Checkout Process Sequence
+│   └── 🖼️ Frame: User Registration Sequence
+├── 📄 Data Model
+│   └── 🖼️ Frame: Domain ER Diagram
+├── 📄 Architecture
+│   └── 🖼️ Frame: System Context (C4)
+├── 📄 User Journeys
+│   ├── 🖼️ Frame: New User Onboarding
+│   └── 🖼️ Frame: Returning Customer Journey
+└── 📄 Component Library
+    ├── 🧩 Design Tokens
+    ├── 🧩 Flow Connectors
+    ├── 🧩 Annotation Components
+    └── 🧩 Entity Cards
+```
+
+## Design System Application
+
+### Material Design 3 (default)
+
+```json
+{
+  "colors": {
+    "primary": "#6750A4",
+    "secondary": "#625B71",
+    "success": "#2ECC71",
+    "error": "#B3261E",
+    "warning": "#F59E0B",
+    "surface": "#FFFBFE",
+    "outline": "#79747E"
+  },
+  "typography": {
+    "fontFamily": "Roboto",
+    "headingSize": 24,
+    "bodySize": 14,
+    "labelSize": 12
+  },
+  "spacing": {
+    "base": 8,
+    "scale": 1.5
+  },
+  "borderRadius": {
+    "small": 4,
+    "medium": 8,
+    "large": 16
+  }
+}
+```
+
+### Apple HIG
+
+```json
+{
+  "colors": {
+    "primary": "#007AFF",
+    "secondary": "#5856D6",
+    "success": "#34C759",
+    "error": "#FF3B30",
+    "warning": "#FF9500"
+  },
+  "typography": {
+    "fontFamily": "SF Pro",
+    "headingSize": 28,
+    "bodySize": 17,
+    "labelSize": 13
+  },
+  "spacing": {
+    "base": 8,
+    "scale": 2
+  }
+}
+```
+
+## API Integration
+
+### Figma REST API Calls
+
+The generator uses the following Figma API endpoints:
+
+```javascript
+// Get file structure
+GET https://api.figma.com/v1/files/:file_key
+
+// Create new page
+POST https://api.figma.com/v1/files/:file_key/pages
+
+// Create components
+POST https://api.figma.com/v1/files/:file_key/components
+
+// Update node properties
+POST https://api.figma.com/v1/files/:file_key/nodes
+
+// Get image exports (for previews)
+GET https://api.figma.com/v1/images/:file_key
+```
+
+### Rate Limiting
+
+The generator implements exponential backoff to handle Figma API rate limits:
+
+```javascript
+const retryDelays = [1000, 2000, 4000, 8000]; // milliseconds
+const maxRetries = 5;
+
+async function callFigmaAPI(endpoint, method, data) {
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    try {
+      const response = await fetch(endpoint, { method, body: data });
+      if (response.status === 429) {
+        // Rate limited
+        await sleep(retryDelays[attempt] || 8000);
+        continue;
+      }
+      return response;
+    } catch (error) {
+      if (attempt === maxRetries - 1) throw error;
+      await sleep(retryDelays[attempt]);
+    }
+  }
+}
+```
+
+### Batch Creation
+
+To minimize API calls, the generator batches component creation:
+
+```javascript
+// Instead of creating components one-by-one
+// Batch multiple components in a single API call
+const batchSize = 10;
+for (let i = 0; i < components.length; i += batchSize) {
+  const batch = components.slice(i, i + batchSize);
+  await createComponentsBatch(batch);
+}
+```
+
+## Example Asset Output
+
+```json
+{
+  "figma_assets": [
+    {
+      "node_id": "123:456",
+      "type": "page",
+      "name": "Index",
+      "preview_url": "https://figma.com/file/abc/preview.png",
+      "figma_url": "https://figma.com/file/abc?node-id=123:456"
+    },
+    {
+      "node_id": "123:789",
+      "type": "frame",
+      "name": "Flow: Checkout",
+      "preview_url": "https://figma.com/file/abc/checkout.png",
+      "figma_url": "https://figma.com/file/abc?node-id=123:789"
+    },
+    {
+      "node_id": "124:001",
+      "type": "component",
+      "name": "Entity: User",
+      "preview_url": "https://figma.com/file/abc/user-entity.png",
+      "figma_url": "https://figma.com/file/abc?node-id=124:001"
+    }
+  ]
+}
+```
+
+## Developer Annotations
+
+Each Figma frame includes developer handoff annotations:
+
+### Annotation Component Structure
+
+```
+┌─────────────────────────────────────┐
+│ 📝 Feature: F002                    │
+│ User Stories: US003, US004, US005   │
+│                                     │
+│ Acceptance Criteria:                │
+│ ✓ User can filter by category       │
+│ ✓ Results update in real-time       │
+│ ✓ Empty state shown when no results │
+│                                     │
+│ Technical Notes:                    │
+│ • Use debounced search (300ms)      │
+│ • Implement virtual scrolling       │
+│ • Cache results for 5 minutes       │
+└─────────────────────────────────────┘
+```
+
+## Usage in Pipeline
+
+The Figma Generator is automatically invoked as Phase 4:
+
+```bash
+skills run omni-architect \
+  --prd_source "./docs/requirements.md" \
+  --figma_file_key "abc123XYZ" \
+  --figma_access_token "$FIGMA_TOKEN" \
+  --design_system "material-3" \
+  --project_name "E-Commerce Platform"
+```
+
+Generated assets are consolidated in [Phase 5: Asset Delivery](/pipeline/asset-delivery).
+
+## Best Practices
+
+<CardGroup cols={2}>
+  <Card title="Use Dedicated Figma File" icon="file">
+    Create a separate Figma file for Omni Architect outputs to avoid conflicts.
+  </Card>
+  
+  <Card title="Configure Design Tokens" icon="palette">
+    Customize design tokens in config to match your brand guidelines.
+  </Card>
+  
+  <Card title="Review Before Handoff" icon="eye">
+    Manually review generated assets before developer handoff.
+  </Card>
+  
+  <Card title="Maintain Component Library" icon="layer-group">
+    Reuse the generated component library across manual design work.
+  </Card>
+</CardGroup>
+
+## Security Considerations
+
+<Warning>
+**Never commit Figma tokens to version control**
+
+Always use environment variables:
+```bash
+export FIGMA_TOKEN="your-token-here"
+```
+
+The orchestration log automatically sanitizes tokens before saving.
+</Warning>
+
+## Troubleshooting
+
+| Issue | Cause | Solution |
+|-------|-------|----------|
+| "403 Forbidden" | Token lacks write permissions | Regenerate token with write scope |
+| "404 File not found" | Invalid figma_file_key | Verify file key from Figma URL |
+| "429 Rate limited" | Too many API requests | Generator auto-retries with backoff |
+| "Assets not visible" | Page not selected in Figma | Navigate to project page in Figma |
+| "Missing design tokens" | Custom design system incomplete | Provide all required token values |
+| "Timeout on large diagrams" | Complex diagram structure | Split diagram or increase timeout |
+
+## Advanced Configuration
+
+### Custom Design Tokens
+
+```yaml
+# .omni-architect.yml
+design_tokens:
+  colors:
+    primary: "#4A90D9"
+    secondary: "#7B68EE"
+    success: "#2ECC71"
+    error: "#E74C3C"
+  typography:
+    fontFamily: "Inter"
+    headingSize: 24
+    bodySize: 14
+  spacing:
+    base: 8
+    scale: 1.5
+```
+
+### Responsive Variants
+
+Enable automatic responsive variant generation:
+
+```yaml
+responsive:
+  enabled: true
+  breakpoints:
+    mobile: 375
+    tablet: 768
+    desktop: 1440
+```
+
+## Next Phase
+
+Once Figma assets are created, the pipeline proceeds to:
+
+<Card title="Phase 5: Asset Delivery" icon="box-open" href="/pipeline/asset-delivery">
+  Consolidate all pipeline outputs into a structured delivery package with documentation.
+</Card>

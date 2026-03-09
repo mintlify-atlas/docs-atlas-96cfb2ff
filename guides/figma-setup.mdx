@@ -1,0 +1,394 @@
+---
+title: Figma Setup
+description: How to get your Figma access token, file key, and configure permissions for Omni Architect
+---
+
+# Figma Setup
+
+Omni Architect generates design assets directly in Figma during Phase 4 of the pipeline. To enable this, you need to provide a Figma access token and file key. This guide walks you through the setup process.
+
+## Prerequisites
+
+Before starting, ensure you have:
+
+- A Figma account (free or paid)
+- Edit access to the Figma file where assets will be generated
+- For teams: Admin or Editor role in the Figma workspace
+
+<Warning>
+Viewer-only access is insufficient. You must have **Editor** or **Admin** permissions to create frames and components via the API.
+</Warning>
+
+---
+
+## Step 1: Generate a Figma Access Token
+
+Omni Architect uses a Personal Access Token to authenticate with the Figma API.
+
+<Steps>
+  <Step title="Log in to Figma">
+    Navigate to [figma.com](https://figma.com) and log in to your account.
+  </Step>
+  
+  <Step title="Open Account Settings">
+    Click your profile picture in the top-right corner → **Settings**
+  </Step>
+  
+  <Step title="Navigate to Personal Access Tokens">
+    Scroll down to the **Personal access tokens** section.
+  </Step>
+  
+  <Step title="Generate New Token">
+    Click **Generate new token**
+    
+    - **Token name**: `Omni Architect` (or any descriptive name)
+    - **Expiration**: Choose based on your security policy
+      - For testing: 30 days
+      - For production: 90 days or Never (requires periodic renewal)
+    - **Scopes**: The default scope (full file access) is required
+  </Step>
+  
+  <Step title="Copy and Store Token Securely">
+    **IMPORTANT:** Copy the token immediately. It will only be shown once.
+    
+    Store it securely:
+    ```bash
+    # Add to your shell environment
+    echo 'export FIGMA_TOKEN="figd_your_token_here"' >> ~/.bashrc
+    source ~/.bashrc
+    
+    # Or use a secrets manager
+    aws secretsmanager create-secret \
+      --name omni-architect/figma-token \
+      --secret-string "figd_your_token_here"
+    ```
+  </Step>
+</Steps>
+
+<Warning>
+**Security Best Practices:**
+- Never commit tokens to Git repositories
+- Never share tokens in Slack, email, or documentation
+- Use environment variables or secrets managers
+- Rotate tokens every 90 days for production use
+- Revoke immediately if compromised
+</Warning>
+
+---
+
+## Step 2: Get Your Figma File Key
+
+The file key identifies which Figma file will receive the generated assets.
+
+### Finding the File Key
+
+The file key is in your Figma file's URL:
+
+```
+https://www.figma.com/file/{FILE_KEY}/Your-File-Name
+                            ^^^^^^^^^
+                            This is your file key
+```
+
+**Example:**
+
+```
+URL: https://www.figma.com/file/abc123XYZ456/My-Design-System
+
+File Key: abc123XYZ456
+```
+
+<Steps>
+  <Step title="Open Your Figma File">
+    Navigate to the Figma file where you want Omni Architect to generate assets.
+  </Step>
+  
+  <Step title="Copy the URL">
+    Copy the entire URL from your browser's address bar.
+  </Step>
+  
+  <Step title="Extract the File Key">
+    The file key is the alphanumeric string between `/file/` and the file name.
+    
+    ```bash
+    # From this URL:
+    https://www.figma.com/file/abc123XYZ456/My-Design-System
+    
+    # Extract:
+    abc123XYZ456
+    ```
+  </Step>
+</Steps>
+
+### File Key in Figma URLs
+
+Different Figma URLs contain the file key in the same position:
+
+| URL Type | Format | File Key Location |
+|----------|--------|-------------------|
+| File view | `figma.com/file/{KEY}/Name` | Between `/file/` and `/Name` |
+| Design view | `figma.com/design/{KEY}/Name` | Between `/design/` and `/Name` |
+| Prototype | `figma.com/proto/{KEY}/Name` | Between `/proto/` and `/Name` |
+
+---
+
+## Step 3: Verify Permissions
+
+Omni Architect requires specific permissions to create and modify Figma content.
+
+### Required Permissions
+
+| Permission | Reason | How to Check |
+|------------|--------|-------------|
+| **File edit access** | Create frames, pages, components | Open file → Can you edit objects? |
+| **API write access** | Personal Access Token includes this by default | Token generated = write enabled |
+| **Workspace access** | Read design system tokens (if using team library) | Workspace member with Editor role |
+
+### Testing Your Setup
+
+Verify your token and file key work correctly:
+
+```bash
+# Test API access with curl
+curl -H "X-Figma-Token: $FIGMA_TOKEN" \
+  "https://api.figma.com/v1/files/YOUR_FILE_KEY"
+```
+
+**Expected response:**
+
+```json
+{
+  "name": "Your File Name",
+  "lastModified": "2026-03-09T10:30:00Z",
+  "thumbnailUrl": "https://...",
+  "version": "1234567890",
+  "document": { ... }
+}
+```
+
+**If you see an error:**
+
+| Error | Cause | Solution |
+|-------|-------|----------|
+| `403 Forbidden` | Invalid token or expired | Regenerate token in Figma settings |
+| `404 Not Found` | Incorrect file key | Double-check file key from URL |
+| `401 Unauthorized` | Token not included | Ensure `X-Figma-Token` header is set |
+
+---
+
+## Step 4: Configure Omni Architect
+
+Now that you have your token and file key, configure Omni Architect:
+
+### Option 1: Command-Line Arguments
+
+```bash
+skills run omni-architect \
+  --prd_source "./prd.md" \
+  --project_name "My Project" \
+  --figma_file_key "abc123XYZ456" \
+  --figma_access_token "$FIGMA_TOKEN"
+```
+
+### Option 2: Environment Variables
+
+```bash
+# Set environment variables
+export FIGMA_FILE_KEY="abc123XYZ456"
+export FIGMA_TOKEN="figd_your_token_here"
+
+# Run with env vars
+skills run omni-architect \
+  --prd_source "./prd.md" \
+  --project_name "My Project" \
+  --figma_file_key "$FIGMA_FILE_KEY" \
+  --figma_access_token "$FIGMA_TOKEN"
+```
+
+### Option 3: Configuration File
+
+Create `.omni-architect.yml` in your project root:
+
+```yaml
+# .omni-architect.yml
+project_name: "My Project"
+figma_file_key: "abc123XYZ456"  # OK to commit (not sensitive)
+# figma_access_token: DO NOT put token here!
+
+design_system: "material-3"
+locale: "en-US"
+validation_mode: "interactive"
+```
+
+Then run:
+
+```bash
+# Token still from environment (secure)
+export FIGMA_TOKEN="figd_your_token_here"
+
+skills run omni-architect \
+  --prd_source "./prd.md" \
+  --figma_access_token "$FIGMA_TOKEN"
+```
+
+<Tip>
+**Best Practice:** Store the file key in `.omni-architect.yml` (safe to commit), but always pass the token via environment variable (never commit).
+</Tip>
+
+---
+
+## Step 5: Understand What Gets Created
+
+Omni Architect will create a structured hierarchy in your Figma file:
+
+```
+📁 {project_name} - Omni Architect
+├── 📄 Index (Navigation page with links)
+├── 📄 User Flows
+│   ├── 🖼️ Flow: Checkout
+│   ├── 🖼️ Flow: Authentication
+│   └── 🖼️ Flow: Product Search
+├── 📄 Interaction Specs
+│   ├── 🖼️ Sequence: Checkout Process
+│   └── 🖼️ Sequence: User Registration
+├── 📄 Data Model
+│   └── 🖼️ ER: Domain Model
+├── 📄 Architecture
+│   └── 🖼️ C4: System Context
+└── 📄 Component Library
+    ├── 🧩 Design Tokens
+    ├── 🧩 Flow Connectors
+    └── 🧩 Annotation Components
+```
+
+### Pages Created
+
+- **Index**: Landing page with links to all generated frames
+- **User Flows**: Flowchart diagrams as wireframed screens
+- **Interaction Specs**: Sequence diagrams with interaction annotations
+- **Data Model**: ER diagrams with entity documentation
+- **Architecture**: C4 diagrams with system context
+- **Component Library**: Reusable tokens and connectors
+
+### Frames Per Diagram Type
+
+| Mermaid Diagram | Figma Asset |
+|-----------------|-------------|
+| `flowchart` | Wireframe user flow with screens connected by arrows |
+| `sequenceDiagram` | Interaction specification showing actor-system communication |
+| `erDiagram` | Visual data model with entities and relationships |
+| `stateDiagram` | State management component showing UI states |
+| `C4Context` | Architecture overview diagram |
+| `journey` | User journey map with touchpoints |
+
+<Warning>
+**File Organization:** Omni Architect creates a **new page group** for each run. If you run multiple times on the same file, you'll have multiple versions. Archive or delete old versions manually.
+</Warning>
+
+---
+
+## Advanced Configuration
+
+### Using Team Libraries
+
+If your Figma workspace has a shared design system:
+
+```yaml
+# .omni-architect.yml
+design_system: "custom"
+design_tokens:
+  library_key: "xyz789ABC"  # File key of your design system
+  colors:
+    primary: "Brand/Primary"    # Reference to library color
+    secondary: "Brand/Secondary"
+  typography:
+    font_family: "Brand/Font"  # Reference to library font
+```
+
+Omni Architect will use components and styles from your team library instead of creating new ones.
+
+### Custom Design Systems
+
+See the [Custom Design Systems](/guides/custom-design-systems) guide for detailed configuration of design tokens, colors, typography, and spacing.
+
+---
+
+## Troubleshooting
+
+<Accordion title="Error: 403 Forbidden">
+  **Cause:** Your token doesn't have access to the file, or the token is invalid.
+  
+  **Solutions:**
+  1. Verify the token is correct and hasn't expired
+  2. Check you have edit access to the file (open it and try editing)
+  3. Regenerate the token in Figma settings
+  4. Ensure the file isn't in a restricted workspace
+</Accordion>
+
+<Accordion title="Error: 404 Not Found">
+  **Cause:** The file key is incorrect or the file has been deleted.
+  
+  **Solutions:**
+  1. Double-check the file key from the URL
+  2. Ensure the file still exists (open it in Figma)
+  3. Check for typos in the file key
+</Accordion>
+
+<Accordion title="Error: 429 Rate Limit Exceeded">
+  **Cause:** Too many API requests in a short time.
+  
+  **Solutions:**
+  1. Wait 60 seconds and retry
+  2. Omni Architect has automatic exponential backoff, but very large PRDs may hit limits
+  3. Consider using a Figma service account (higher rate limits) for production
+</Accordion>
+
+<Accordion title="Assets Not Appearing in Figma">
+  **Cause:** API call succeeded but frames aren't visible.
+  
+  **Solutions:**
+  1. Refresh the Figma file (Cmd/Ctrl + R)
+  2. Check the correct file is open (verify file key)
+  3. Look for a new page group named "{project_name} - Omni Architect"
+  4. Check the orchestration log for errors
+</Accordion>
+
+<Accordion title="Token Works Locally But Fails in CI/CD">
+  **Cause:** Token not properly set in CI/CD secrets.
+  
+  **Solutions:**
+  1. Add token to CI/CD secrets (GitHub Secrets, GitLab CI Variables, etc.)
+  2. Verify the secret name matches your workflow:
+     ```yaml
+     env:
+       FIGMA_TOKEN: ${{ secrets.FIGMA_ACCESS_TOKEN }}
+     ```
+  3. Ensure the token hasn't expired
+</Accordion>
+
+---
+
+## Security Checklist
+
+Before deploying to production:
+
+- [ ] Token stored in secrets manager (not in code)
+- [ ] Token expiration set to ≤ 90 days
+- [ ] Environment variable used for token (`$FIGMA_TOKEN`)
+- [ ] `.env` file added to `.gitignore`
+- [ ] File key in config file (safe to commit)
+- [ ] Team members know how to rotate tokens
+- [ ] Monitoring set up for 401/403 errors (token expiration)
+
+---
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Custom Design Systems" icon="palette" href="/guides/custom-design-systems">
+    Configure custom design tokens for brand consistency
+  </Card>
+  <Card title="Troubleshooting" icon="wrench" href="/guides/troubleshooting">
+    Common Figma API issues and solutions
+  </Card>
+</CardGroup>

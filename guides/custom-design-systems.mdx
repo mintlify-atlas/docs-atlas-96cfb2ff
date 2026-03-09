@@ -1,0 +1,642 @@
+---
+title: Custom Design Systems
+description: How to configure custom design tokens to match your brand guidelines and design system
+---
+
+# Custom Design Systems
+
+Omni Architect supports multiple design systems out of the box, but you can also define custom design tokens to match your brand guidelines. This guide shows you how to configure colors, typography, spacing, and other design tokens.
+
+## Built-in Design Systems
+
+Omni Architect includes four pre-configured design systems:
+
+| System | Best For | Token Source |
+|--------|----------|-------------|
+| **material-3** | Android apps, Google-style UIs | [Material Design 3](https://m3.material.io) |
+| **apple-hig** | iOS/macOS apps, Apple-style UIs | [Apple HIG](https://developer.apple.com/design/human-interface-guidelines) |
+| **tailwind** | Web apps, utility-first design | [Tailwind CSS](https://tailwindcss.com/docs/customizing-colors) |
+| **custom** | Brand-specific requirements | Your configuration |
+
+### Using a Built-in System
+
+```bash
+skills run omni-architect \
+  --design_system "material-3"
+```
+
+Or in `.omni-architect.yml`:
+
+```yaml
+design_system: "material-3"  # or apple-hig, tailwind, custom
+```
+
+---
+
+## Configuring Custom Design Tokens
+
+To use custom design tokens, set `design_system: "custom"` and define your tokens in `.omni-architect.yml`.
+
+### Basic Configuration
+
+```yaml
+# .omni-architect.yml
+design_system: "custom"
+
+design_tokens:
+  colors:
+    primary: "#4A90D9"
+    secondary: "#7B68EE"
+    success: "#2ECC71"
+    error: "#E74C3C"
+    warning: "#FFA500"
+  
+  typography:
+    font_family: "Inter"
+    heading_size: 24
+    body_size: 14
+  
+  spacing:
+    base: 8
+    scale: 1.5
+```
+
+---
+
+## Color Tokens
+
+Define your color palette using hex codes, RGB, or HSL values.
+
+### Basic Colors
+
+```yaml
+design_tokens:
+  colors:
+    # Brand colors
+    primary: "#4A90D9"      # Main brand color
+    secondary: "#7B68EE"    # Secondary actions
+    accent: "#FF6B6B"       # Highlights and CTAs
+    
+    # Semantic colors
+    success: "#2ECC71"      # Success states
+    error: "#E74C3C"        # Error states
+    warning: "#FFA500"      # Warning states
+    info: "#3498DB"         # Info states
+    
+    # Neutral colors
+    background: "#FFFFFF"   # Page background
+    surface: "#F8F9FA"     # Card/component background
+    border: "#DEE2E6"      # Borders and dividers
+    
+    # Text colors
+    text_primary: "#212529"    # Body text
+    text_secondary: "#6C757D"  # Secondary text
+    text_disabled: "#ADB5BD"   # Disabled text
+```
+
+### Color Scales
+
+Define color scales for more granular control:
+
+```yaml
+design_tokens:
+  colors:
+    primary:
+      50: "#E3F2FD"
+      100: "#BBDEFB"
+      200: "#90CAF9"
+      300: "#64B5F6"
+      400: "#42A5F5"
+      500: "#2196F3"  # Base
+      600: "#1E88E5"
+      700: "#1976D2"
+      800: "#1565C0"
+      900: "#0D47A1"
+```
+
+Omni Architect will use these scales for hover states, active states, and variants.
+
+### Color Formats
+
+All standard CSS color formats are supported:
+
+```yaml
+design_tokens:
+  colors:
+    hex: "#4A90D9"                    # Hex
+    hex_short: "#49D"                 # Short hex
+    rgb: "rgb(74, 144, 217)"          # RGB
+    rgba: "rgba(74, 144, 217, 0.8)"   # RGBA with alpha
+    hsl: "hsl(210, 65%, 57%)"         # HSL
+    hsla: "hsla(210, 65%, 57%, 0.8)" # HSLA with alpha
+```
+
+---
+
+## Typography Tokens
+
+Define font families, sizes, weights, and line heights.
+
+### Basic Typography
+
+```yaml
+design_tokens:
+  typography:
+    # Font families
+    font_family: "Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif"
+    font_family_mono: "'Fira Code', 'Courier New', monospace"
+    
+    # Font sizes (in pixels)
+    heading_size: 24
+    subheading_size: 18
+    body_size: 14
+    caption_size: 12
+    
+    # Font weights
+    font_weight_normal: 400
+    font_weight_medium: 500
+    font_weight_bold: 700
+    
+    # Line heights
+    line_height_tight: 1.2
+    line_height_normal: 1.5
+    line_height_relaxed: 1.8
+```
+
+### Type Scale
+
+Define a complete type scale for headings and body text:
+
+```yaml
+design_tokens:
+  typography:
+    font_family: "Inter"
+    
+    scale:
+      h1:
+        size: 32
+        weight: 700
+        line_height: 1.2
+        letter_spacing: -0.5
+      h2:
+        size: 24
+        weight: 700
+        line_height: 1.3
+        letter_spacing: -0.25
+      h3:
+        size: 18
+        weight: 600
+        line_height: 1.4
+        letter_spacing: 0
+      body:
+        size: 14
+        weight: 400
+        line_height: 1.5
+        letter_spacing: 0
+      caption:
+        size: 12
+        weight: 400
+        line_height: 1.4
+        letter_spacing: 0.25
+```
+
+### Using Custom Fonts
+
+If using a custom font, ensure it's available in Figma:
+
+```yaml
+design_tokens:
+  typography:
+    font_family: "YourCustomFont"  # Must be installed in Figma
+```
+
+<Warning>
+The font must be available in your Figma workspace. If the font isn't found, Omni Architect will fall back to the closest available font (usually Inter or Roboto).
+</Warning>
+
+---
+
+## Spacing Tokens
+
+Define spacing scales for margins, padding, and layout.
+
+### Base Spacing
+
+```yaml
+design_tokens:
+  spacing:
+    base: 8          # Base unit in pixels
+    scale: 1.5       # Multiplier for scale (1.5x growth)
+```
+
+This generates:
+
+- `spacing_xs`: 4px (base / 2)
+- `spacing_sm`: 8px (base)
+- `spacing_md`: 12px (base × scale)
+- `spacing_lg`: 18px (base × scale²)
+- `spacing_xl`: 27px (base × scale³)
+
+### Explicit Spacing Scale
+
+```yaml
+design_tokens:
+  spacing:
+    xs: 4
+    sm: 8
+    md: 16
+    lg: 24
+    xl: 32
+    xxl: 48
+```
+
+### Component-Specific Spacing
+
+```yaml
+design_tokens:
+  spacing:
+    base: 8
+    
+    components:
+      button_padding_x: 16  # Horizontal padding
+      button_padding_y: 8   # Vertical padding
+      card_padding: 24
+      input_padding: 12
+      section_gap: 32       # Gap between sections
+```
+
+---
+
+## Border Tokens
+
+Define border widths, radii, and styles.
+
+```yaml
+design_tokens:
+  borders:
+    # Border widths (in pixels)
+    width_thin: 1
+    width_medium: 2
+    width_thick: 4
+    
+    # Border radius (in pixels)
+    radius_sm: 4
+    radius_md: 8
+    radius_lg: 16
+    radius_full: 9999  # Fully rounded (pills)
+    
+    # Border styles
+    style_solid: "solid"
+    style_dashed: "dashed"
+    style_dotted: "dotted"
+```
+
+---
+
+## Shadow Tokens
+
+Define elevation and shadow styles.
+
+```yaml
+design_tokens:
+  shadows:
+    sm: "0 1px 2px rgba(0, 0, 0, 0.05)"
+    md: "0 4px 6px rgba(0, 0, 0, 0.07)"
+    lg: "0 10px 15px rgba(0, 0, 0, 0.1)"
+    xl: "0 20px 25px rgba(0, 0, 0, 0.15)"
+```
+
+---
+
+## Animation Tokens
+
+Define animation durations and easing functions.
+
+```yaml
+design_tokens:
+  animation:
+    # Durations (in milliseconds)
+    duration_fast: 150
+    duration_normal: 300
+    duration_slow: 500
+    
+    # Easing functions
+    easing_default: "cubic-bezier(0.4, 0.0, 0.2, 1)"
+    easing_in: "cubic-bezier(0.4, 0.0, 1, 1)"
+    easing_out: "cubic-bezier(0.0, 0.0, 0.2, 1)"
+```
+
+---
+
+## Complete Example
+
+Here's a complete custom design system configuration:
+
+```yaml
+# .omni-architect.yml
+project_name: "My SaaS Platform"
+design_system: "custom"
+
+design_tokens:
+  colors:
+    # Brand
+    primary: "#6366F1"      # Indigo
+    secondary: "#8B5CF6"    # Purple
+    accent: "#EC4899"       # Pink
+    
+    # Semantic
+    success: "#10B981"      # Green
+    error: "#EF4444"        # Red
+    warning: "#F59E0B"      # Amber
+    info: "#3B82F6"         # Blue
+    
+    # Neutrals
+    gray:
+      50: "#F9FAFB"
+      100: "#F3F4F6"
+      200: "#E5E7EB"
+      300: "#D1D5DB"
+      400: "#9CA3AF"
+      500: "#6B7280"
+      600: "#4B5563"
+      700: "#374151"
+      800: "#1F2937"
+      900: "#111827"
+    
+    # Backgrounds
+    background: "#FFFFFF"
+    surface: "#F9FAFB"      # gray.50
+    
+    # Text
+    text_primary: "#111827"   # gray.900
+    text_secondary: "#6B7280" # gray.500
+    text_disabled: "#9CA3AF"  # gray.400
+  
+  typography:
+    font_family: "'Geist', Inter, system-ui, -apple-system, sans-serif"
+    font_family_mono: "'Geist Mono', 'Fira Code', monospace"
+    
+    scale:
+      h1:
+        size: 36
+        weight: 700
+        line_height: 1.2
+        letter_spacing: -1
+      h2:
+        size: 30
+        weight: 700
+        line_height: 1.25
+        letter_spacing: -0.5
+      h3:
+        size: 24
+        weight: 600
+        line_height: 1.3
+      h4:
+        size: 20
+        weight: 600
+        line_height: 1.4
+      body_lg:
+        size: 16
+        weight: 400
+        line_height: 1.6
+      body:
+        size: 14
+        weight: 400
+        line_height: 1.5
+      body_sm:
+        size: 13
+        weight: 400
+        line_height: 1.4
+      caption:
+        size: 12
+        weight: 400
+        line_height: 1.4
+  
+  spacing:
+    base: 8
+    xs: 4
+    sm: 8
+    md: 16
+    lg: 24
+    xl: 32
+    xxl: 48
+    xxxl: 64
+    
+    components:
+      button_padding_x: 20
+      button_padding_y: 10
+      card_padding: 24
+      input_padding: 12
+      section_gap: 48
+  
+  borders:
+    width: 1
+    radius_sm: 6
+    radius_md: 8
+    radius_lg: 12
+    radius_xl: 16
+    radius_full: 9999
+  
+  shadows:
+    sm: "0 1px 2px 0 rgba(0, 0, 0, 0.05)"
+    md: "0 4px 6px -1px rgba(0, 0, 0, 0.1)"
+    lg: "0 10px 15px -3px rgba(0, 0, 0, 0.1)"
+    xl: "0 20px 25px -5px rgba(0, 0, 0, 0.1)"
+  
+  animation:
+    duration_fast: 150
+    duration_normal: 250
+    duration_slow: 400
+    easing: "cubic-bezier(0.4, 0, 0.2, 1)"
+```
+
+---
+
+## Using Figma Team Libraries
+
+If your design system lives in a Figma team library, reference it instead of defining tokens:
+
+```yaml
+# .omni-architect.yml
+design_system: "custom"
+
+design_tokens:
+  library_key: "xyz789ABC123"  # File key of your design system
+  
+  # Reference library styles by name
+  colors:
+    primary: "Brand/Primary/500"
+    secondary: "Brand/Secondary/500"
+    success: "Semantic/Success"
+    error: "Semantic/Error"
+  
+  typography:
+    font_family: "Brand/Font/Primary"
+    heading: "Text Styles/Heading/H1"
+    body: "Text Styles/Body/Regular"
+  
+  components:
+    button: "Components/Button/Primary"
+    card: "Components/Card/Default"
+    input: "Components/Input/Text"
+```
+
+Omni Architect will:
+1. Connect to the library file using `library_key`
+2. Extract styles and components by name
+3. Use them when generating assets
+
+<Tip>
+Using a team library ensures 100% consistency with your existing design system. All generated assets will use the same tokens as your production designs.
+</Tip>
+
+---
+
+## Token Validation
+
+Omni Architect validates your tokens on startup:
+
+```bash
+╔══════════════════════════════════════════════════════════╗
+║ Validating Design Tokens                                 ║
+╚══════════════════════════════════════════════════════════╝
+
+✓ Colors: 12 tokens defined
+✓ Typography: Font 'Geist' found in Figma
+✓ Spacing: Base unit 8px, 7 scales
+✓ Borders: 5 radius values
+✓ Shadows: 4 elevation levels
+
+Design system ready ✓
+```
+
+**If validation fails:**
+
+```bash
+✗ Typography: Font 'CustomFont' not available in Figma
+  → Falling back to 'Inter'
+
+⚠ Warning: Some tokens may not render as expected
+```
+
+---
+
+## Best Practices
+
+### Use Semantic Naming
+
+❌ **Bad:**
+```yaml
+colors:
+  blue: "#4A90D9"
+  red: "#E74C3C"
+```
+
+✅ **Good:**
+```yaml
+colors:
+  primary: "#4A90D9"
+  error: "#E74C3C"
+```
+
+Semantic names make it easier to update colors without changing references.
+
+### Use a Base Unit for Spacing
+
+❌ **Bad:**
+```yaml
+spacing:
+  xs: 3
+  sm: 7
+  md: 15
+  lg: 23
+```
+
+✅ **Good:**
+```yaml
+spacing:
+  base: 8
+  xs: 4    # base / 2
+  sm: 8    # base
+  md: 16   # base × 2
+  lg: 24   # base × 3
+```
+
+Base units create visual rhythm and make spacing predictable.
+
+### Define Color Scales
+
+❌ **Bad:**
+```yaml
+colors:
+  primary: "#4A90D9"
+  primary_hover: "#3A80C9"
+  primary_active: "#2A70B9"
+```
+
+✅ **Good:**
+```yaml
+colors:
+  primary:
+    400: "#5AA0E9"  # Lighter (hover)
+    500: "#4A90D9"  # Base
+    600: "#3A80C9"  # Darker (active)
+```
+
+Scales provide automatic variants for states.
+
+---
+
+## Troubleshooting
+
+<Accordion title="Custom font not rendering in Figma">
+  **Cause:** Font not installed in Figma workspace.
+  
+  **Solutions:**
+  1. Install the font in Figma: **Menu → Font Settings → Upload Font**
+  2. Use a font available in Figma's library
+  3. Use a web-safe font fallback:
+     ```yaml
+     font_family: "CustomFont, Inter, sans-serif"
+     ```
+</Accordion>
+
+<Accordion title="Colors look different than expected">
+  **Cause:** Color space or format mismatch.
+  
+  **Solutions:**
+  1. Use hex format (`#RRGGBB`) for consistency
+  2. Ensure RGB values are 0-255, not 0.0-1.0
+  3. Check for transparency (RGBA) when you meant opaque (RGB)
+</Accordion>
+
+<Accordion title="Library components not found">
+  **Cause:** Library key incorrect or components renamed.
+  
+  **Solutions:**
+  1. Verify `library_key` from the design system file URL
+  2. Check exact component names in Figma (case-sensitive)
+  3. Ensure the library is published and enabled in your workspace
+</Accordion>
+
+<Accordion title="Spacing looks inconsistent">
+  **Cause:** Not using base units consistently.
+  
+  **Solutions:**
+  1. Define a `base` unit (typically 4px or 8px)
+  2. Derive all spacing from multiples of the base
+  3. Avoid arbitrary values like 13px or 17px
+</Accordion>
+
+---
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Figma Setup" icon="figma" href="/guides/figma-setup">
+    Get your Figma token and file key
+  </Card>
+  <Card title="Examples" icon="book" href="/examples/ecommerce-platform">
+    See design systems in action
+  </Card>
+</CardGroup>

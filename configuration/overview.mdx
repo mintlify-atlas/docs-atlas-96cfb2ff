@@ -1,0 +1,204 @@
+---
+title: Configuration Overview
+description: Configure Omni Architect via .omni-architect.yml or CLI arguments
+---
+
+Omni Architect can be configured in two ways: through a `.omni-architect.yml` configuration file or via CLI arguments. The configuration file approach is recommended for persistent project settings, while CLI arguments are useful for one-off executions or overriding specific settings.
+
+## Configuration Methods
+
+<CodeGroup>
+
+```yaml .omni-architect.yml
+# .omni-architect.yml
+project_name: "E-Commerce Platform"
+figma_file_key: "abc123XYZ"
+design_system: "material-3"
+locale: "pt-BR"
+validation_mode: "interactive"
+validation_threshold: 0.85
+
+diagram_types:
+  - flowchart
+  - sequence
+  - erDiagram
+  - stateDiagram
+  - C4Context
+
+design_tokens:
+  colors:
+    primary: "#4A90D9"
+    secondary: "#7B68EE"
+    success: "#2ECC71"
+    error: "#E74C3C"
+    warning: "#FFA500"
+  typography:
+    font_family: "Inter"
+    heading_size: 24
+    body_size: 14
+  spacing:
+    base: 8
+    scale: 1.5
+
+hooks:
+  on_validation_approved: "npm run generate:specs"
+  on_figma_complete: "npm run notify:slack"
+  on_error: "npm run alert:team"
+```
+
+```bash CLI
+skills run omni-architect \
+  --prd_source "./docs/prd-ecommerce-v2.md" \
+  --project_name "E-Commerce Platform" \
+  --figma_file_key "abc123XYZ" \
+  --figma_access_token "$FIGMA_TOKEN" \
+  --diagram_types '["flowchart","sequence","erDiagram","stateDiagram","C4Context"]' \
+  --design_system "material-3" \
+  --validation_mode "interactive" \
+  --validation_threshold 0.85 \
+  --locale "pt-BR"
+```
+
+</CodeGroup>
+
+## Configuration File Location
+
+Place the `.omni-architect.yml` file in the root of your project directory. When running Omni Architect, it will automatically detect and load this configuration.
+
+```bash
+my-project/
+├── .omni-architect.yml  # Configuration file
+├── docs/
+│   └── prd.md           # Your PRD document
+├── package.json
+└── ...
+```
+
+## Core Configuration Options
+
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `prd_source` | string | Yes | - | PRD document in Markdown format or path/URL to the document |
+| `project_name` | string | Yes | - | Project name used as namespace in diagrams and Figma |
+| `figma_file_key` | string | Yes | - | Figma file key from URL: `https://www.figma.com/file/<FILE_KEY>/...` |
+| `figma_access_token` | string | Yes | - | Figma personal access token with write permissions |
+| `diagram_types` | array | No | `["flowchart", "sequence", "erDiagram", "stateDiagram", "C4Context"]` | List of Mermaid diagram types to generate |
+| `design_system` | string | No | `"material-3"` | Design system for Figma assets: `material-3`, `apple-hig`, `tailwind`, `custom` |
+| `validation_mode` | string | No | `"interactive"` | Validation mode: `interactive`, `batch`, `auto` |
+| `validation_threshold` | number | No | `0.85` | Minimum score (0.0-1.0) for auto-approval when `validation_mode=auto` |
+| `locale` | string | No | `"pt-BR"` | Language for labels, annotations, and generated documentation |
+
+## Priority Order
+
+When both configuration file and CLI arguments are present:
+
+1. **CLI arguments** take highest priority (override everything)
+2. **Configuration file** (`.omni-architect.yml`) takes second priority
+3. **Default values** are used if neither is specified
+
+<Note>
+Sensitive values like `figma_access_token` should be passed via CLI arguments with environment variables rather than stored in the configuration file.
+</Note>
+
+## Environment Variables
+
+You can reference environment variables in your configuration:
+
+```yaml .omni-architect.yml
+project_name: "E-Commerce Platform"
+figma_file_key: "abc123XYZ"
+# Don't store tokens in config - pass via CLI
+# figma_access_token: "${FIGMA_TOKEN}"  # ❌ Not supported yet
+```
+
+```bash CLI
+# Pass sensitive values via environment variables
+export FIGMA_TOKEN="your-token-here"
+
+skills run omni-architect \
+  --prd_source "./docs/prd.md" \
+  --project_name "My Project" \
+  --figma_file_key "abc123XYZ" \
+  --figma_access_token "$FIGMA_TOKEN"
+```
+
+## Minimal Configuration
+
+The absolute minimum required configuration:
+
+<CodeGroup>
+
+```yaml .omni-architect.yml
+project_name: "My Project"
+figma_file_key: "abc123XYZ"
+# figma_access_token must be passed via CLI
+```
+
+```bash CLI
+skills run omni-architect \
+  --prd_source "./docs/prd.md" \
+  --project_name "My Project" \
+  --figma_file_key "abc123XYZ" \
+  --figma_access_token "$FIGMA_TOKEN"
+```
+
+</CodeGroup>
+
+## Complete Configuration Example
+
+For a full-featured setup with all options:
+
+```yaml .omni-architect.yml
+project_name: "E-Commerce Platform"
+figma_file_key: "abc123XYZ"
+design_system: "material-3"
+locale: "pt-BR"
+validation_mode: "interactive"
+validation_threshold: 0.85
+
+diagram_types:
+  - flowchart
+  - sequence
+  - erDiagram
+  - stateDiagram
+  - C4Context
+  - journey
+  - gantt
+
+design_tokens:
+  colors:
+    primary: "#4A90D9"
+    secondary: "#7B68EE"
+    success: "#2ECC71"
+    error: "#E74C3C"
+    warning: "#FFA500"
+  typography:
+    font_family: "Inter"
+    heading_size: 24
+    body_size: 14
+  spacing:
+    base: 8
+    scale: 1.5
+
+hooks:
+  on_validation_approved: "npm run generate:specs"
+  on_figma_complete: "npm run notify:slack"
+  on_error: "npm run alert:team"
+```
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Diagram Types" icon="diagram-project" href="/configuration/diagram-types">
+    Learn about all 7 available Mermaid diagram types
+  </Card>
+  <Card title="Design Systems" icon="palette" href="/configuration/design-systems">
+    Configure Material 3, Apple HIG, Tailwind, or custom systems
+  </Card>
+  <Card title="Validation Modes" icon="check-circle" href="/configuration/validation-modes">
+    Understand interactive, batch, and auto validation
+  </Card>
+  <Card title="Design Tokens" icon="swatchbook" href="/configuration/design-tokens">
+    Customize colors, typography, and spacing
+  </Card>
+</CardGroup>

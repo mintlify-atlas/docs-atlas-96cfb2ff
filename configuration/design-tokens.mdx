@@ -1,0 +1,581 @@
+---
+title: Design Tokens
+description: Customize colors, typography, spacing, and visual style with design tokens
+---
+
+Design tokens allow you to customize the visual style of generated Figma assets while maintaining consistency across all diagrams and components. Tokens override the default design system values.
+
+## Configuration
+
+```yaml .omni-architect.yml
+design_system: "material-3"  # Base system
+
+design_tokens:
+  colors:
+    primary: "#4A90D9"
+    secondary: "#7B68EE"
+    success: "#2ECC71"
+    error: "#E74C3C"
+    warning: "#FFA500"
+  typography:
+    font_family: "Inter"
+    heading_size: 24
+    body_size: 14
+  spacing:
+    base: 8
+    scale: 1.5
+```
+
+## Token Categories
+
+### Colors
+
+Define the color palette for all generated assets.
+
+#### Basic Color Tokens
+
+```yaml
+design_tokens:
+  colors:
+    primary: "#4A90D9"      # Primary brand color
+    secondary: "#7B68EE"    # Secondary brand color
+    success: "#2ECC71"      # Success states
+    error: "#E74C3C"        # Error states
+    warning: "#FFA500"      # Warning states
+```
+
+#### Extended Color Tokens
+
+```yaml
+design_tokens:
+  colors:
+    # Brand Colors
+    primary: "#4A90D9"
+    secondary: "#7B68EE"
+    tertiary: "#1ABC9C"
+    
+    # Semantic Colors
+    success: "#2ECC71"
+    error: "#E74C3C"
+    warning: "#FFA500"
+    info: "#3498DB"
+    
+    # Neutral Scale (for custom design systems)
+    neutral_50: "#F9FAFB"
+    neutral_100: "#F3F4F6"
+    neutral_200: "#E5E7EB"
+    neutral_300: "#D1D5DB"
+    neutral_400: "#9CA3AF"
+    neutral_500: "#6B7280"
+    neutral_600: "#4B5563"
+    neutral_700: "#374151"
+    neutral_800: "#1F2937"
+    neutral_900: "#111827"
+    
+    # Surface Colors
+    background: "#FFFFFF"
+    surface: "#F9FAFB"
+    surface_variant: "#E5E7EB"
+    
+    # Text Colors
+    text_primary: "#111827"
+    text_secondary: "#6B7280"
+    text_disabled: "#9CA3AF"
+    text_on_primary: "#FFFFFF"
+    
+    # Border Colors
+    border: "#E5E7EB"
+    border_focus: "#4A90D9"
+    border_error: "#E74C3C"
+```
+
+#### Color Format Support
+
+<Tabs>
+  <Tab title="Hex">
+    ```yaml
+    colors:
+      primary: "#4A90D9"      # 6-digit hex
+      secondary: "#7B68EE"    # 6-digit hex
+      overlay: "#00000080"    # 8-digit hex with alpha
+    ```
+  </Tab>
+  
+  <Tab title="RGB/RGBA">
+    ```yaml
+    colors:
+      primary: "rgb(74, 144, 217)"
+      secondary: "rgba(123, 104, 238, 0.9)"
+    ```
+  </Tab>
+  
+  <Tab title="HSL/HSLA">
+    ```yaml
+    colors:
+      primary: "hsl(209, 65%, 57%)"
+      secondary: "hsla(248, 39%, 53%, 0.9)"
+    ```
+  </Tab>
+</Tabs>
+
+---
+
+### Typography
+
+Control font families, sizes, weights, and text styles.
+
+#### Basic Typography Tokens
+
+```yaml
+design_tokens:
+  typography:
+    font_family: "Inter"         # Primary font
+    heading_size: 24             # Heading size in px
+    body_size: 14                # Body text size in px
+```
+
+#### Extended Typography Tokens
+
+```yaml
+design_tokens:
+  typography:
+    # Font Families
+    font_family: "Inter"
+    font_family_mono: "Fira Code"
+    font_family_display: "Playfair Display"
+    
+    # Type Scale (sizes in px)
+    heading_1: 32
+    heading_2: 28
+    heading_3: 24
+    heading_4: 20
+    heading_5: 18
+    heading_6: 16
+    body_large: 16
+    body_size: 14               # body_medium
+    body_small: 12
+    caption: 11
+    overline: 10
+    
+    # Font Weights
+    weight_light: 300
+    weight_regular: 400
+    weight_medium: 500
+    weight_semibold: 600
+    weight_bold: 700
+    weight_extrabold: 800
+    
+    # Line Heights (unitless multipliers)
+    line_height_tight: 1.2
+    line_height_normal: 1.5
+    line_height_relaxed: 1.75
+    
+    # Letter Spacing (in em)
+    letter_spacing_tight: -0.02
+    letter_spacing_normal: 0
+    letter_spacing_wide: 0.05
+```
+
+#### Platform-Specific Fonts
+
+<Tabs>
+  <Tab title="Web (Google Fonts)">
+    ```yaml
+    typography:
+      font_family: "Inter"           # Google Fonts
+      font_family_mono: "Fira Code"
+      heading_size: 24
+      body_size: 14
+    ```
+  </Tab>
+  
+  <Tab title="iOS (SF Pro)">
+    ```yaml
+    typography:
+      font_family: "SF Pro"          # Apple system font
+      font_family_mono: "SF Mono"
+      heading_size: 28              # Large Title
+      body_size: 17                 # Body
+    ```
+  </Tab>
+  
+  <Tab title="Android (Roboto)">
+    ```yaml
+    typography:
+      font_family: "Roboto"          # Material default
+      font_family_mono: "Roboto Mono"
+      heading_size: 24
+      body_size: 14
+    ```
+  </Tab>
+</Tabs>
+
+---
+
+### Spacing
+
+Define spacing scale for consistent layouts.
+
+#### Basic Spacing Tokens
+
+```yaml
+design_tokens:
+  spacing:
+    base: 8           # Base unit in px
+    scale: 1.5        # Multiplier for scale (8, 12, 18, 27...)
+```
+
+#### Extended Spacing Tokens
+
+```yaml
+design_tokens:
+  spacing:
+    base: 8           # Base unit
+    scale: 1.5        # Scale factor
+    
+    # Named spacing (in px or using base multiples)
+    xs: 4             # 0.5 × base
+    sm: 8             # 1 × base
+    md: 16            # 2 × base
+    lg: 24            # 3 × base
+    xl: 32            # 4 × base
+    xxl: 48           # 6 × base
+    xxxl: 64          # 8 × base
+    
+    # Component-specific spacing
+    button_padding_x: 16
+    button_padding_y: 8
+    card_padding: 16
+    section_gap: 24
+    page_margin: 32
+```
+
+#### Spacing Scale Systems
+
+<Tabs>
+  <Tab title="Linear (8pt Grid)">
+    ```yaml
+    spacing:
+      base: 8
+      scale: 1        # 8, 16, 24, 32, 40, 48...
+      # Results in: 8, 16, 24, 32, 40, 48, 56, 64
+    ```
+  </Tab>
+  
+  <Tab title="Fibonacci-like">
+    ```yaml
+    spacing:
+      base: 8
+      scale: 1.5      # 8, 12, 18, 27, 40, 60...
+      # Results in: 8, 12, 18, 27, 40, 60, 90
+    ```
+  </Tab>
+  
+  <Tab title="Tailwind (4pt)">
+    ```yaml
+    spacing:
+      base: 4
+      scale: 2        # 4, 8, 16, 32, 64...
+      # Results in: 4, 8, 16, 32, 64, 128
+    ```
+  </Tab>
+</Tabs>
+
+---
+
+### Border Radius
+
+Define corner rounding for components.
+
+```yaml
+design_tokens:
+  border_radius:
+    none: 0
+    sm: 4
+    md: 8
+    lg: 12
+    xl: 16
+    xxl: 24
+    full: 9999        # Fully rounded (pills)
+    
+    # Component-specific
+    button: 8
+    card: 12
+    input: 6
+    modal: 16
+```
+
+---
+
+### Shadows
+
+Define elevation and shadow styles.
+
+```yaml
+design_tokens:
+  shadows:
+    none: "none"
+    sm: "0 1px 2px rgba(0,0,0,0.05)"
+    md: "0 4px 6px rgba(0,0,0,0.1)"
+    lg: "0 10px 15px rgba(0,0,0,0.1)"
+    xl: "0 20px 25px rgba(0,0,0,0.1)"
+    xxl: "0 25px 50px rgba(0,0,0,0.15)"
+    
+    # Material Design elevation
+    elevation_1: "0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24)"
+    elevation_2: "0 3px 6px rgba(0,0,0,0.15), 0 2px 4px rgba(0,0,0,0.12)"
+    elevation_3: "0 10px 20px rgba(0,0,0,0.15), 0 3px 6px rgba(0,0,0,0.10)"
+```
+
+---
+
+### Breakpoints (Responsive)
+
+Define responsive breakpoints for multi-device layouts.
+
+```yaml
+design_tokens:
+  breakpoints:
+    mobile: 375       # iPhone SE
+    mobile_lg: 428    # iPhone Pro Max
+    tablet: 768       # iPad portrait
+    tablet_lg: 1024   # iPad landscape
+    desktop: 1280     # Desktop
+    desktop_lg: 1920  # Large desktop
+```
+
+---
+
+## Complete Example
+
+Here's a comprehensive design token configuration from the README:
+
+```yaml .omni-architect.yml
+project_name: "E-Commerce Platform"
+figma_file_key: "abc123XYZ"
+design_system: "material-3"
+locale: "pt-BR"
+validation_mode: "interactive"
+validation_threshold: 0.85
+
+diagram_types:
+  - flowchart
+  - sequence
+  - erDiagram
+  - stateDiagram
+  - C4Context
+
+# Custom design tokens
+design_tokens:
+  colors:
+    primary: "#4A90D9"
+    secondary: "#7B68EE"
+    success: "#2ECC71"
+    error: "#E74C3C"
+    warning: "#FFA500"
+  typography:
+    font_family: "Inter"
+    heading_size: 24
+    body_size: 14
+  spacing:
+    base: 8
+    scale: 1.5
+
+hooks:
+  on_validation_approved: "npm run generate:specs"
+  on_figma_complete: "npm run notify:slack"
+  on_error: "npm run alert:team"
+```
+
+---
+
+## Design System Overrides
+
+Tokens override the base design system values:
+
+### Material 3 Override Example
+
+```yaml
+design_system: "material-3"  # Base: Material 3 defaults
+
+design_tokens:
+  colors:
+    primary: "#FF6B00"  # Override Material purple with brand orange
+    # Other Material 3 colors (secondary, error, etc.) remain default
+  typography:
+    font_family: "Poppins"  # Override Roboto with custom font
+    # Material 3 type scale remains
+```
+
+### Tailwind Override Example
+
+```yaml
+design_system: "tailwind"  # Base: Tailwind defaults
+
+design_tokens:
+  colors:
+    primary: "#8B5CF6"  # Override blue-500 with violet-500
+  spacing:
+    base: 4             # Keep Tailwind's 4px base
+    scale: 2            # Keep Tailwind's doubling scale
+```
+
+### Custom Design System Example
+
+```yaml
+design_system: "custom"  # No defaults - all tokens required
+
+design_tokens:
+  colors:
+    primary: "#4A90D9"
+    secondary: "#7B68EE"
+    success: "#2ECC71"
+    error: "#E74C3C"
+    warning: "#FFA500"
+    # ... (all color tokens required)
+  typography:
+    font_family: "Inter"
+    heading_size: 24
+    body_size: 14
+    # ... (all typography tokens recommended)
+  spacing:
+    base: 8
+    scale: 1.5
+    # ... (all spacing tokens recommended)
+  border_radius:
+    sm: 4
+    md: 8
+    lg: 12
+    # ... (optional but recommended)
+```
+
+---
+
+## Figma Integration
+
+Design tokens are applied to Figma assets as:
+
+### 1. Color Styles
+
+```
+📂 Color Styles (in Figma)
+├── Primary
+├── Secondary
+├── Success
+├── Error
+├── Warning
+└── ...
+```
+
+### 2. Text Styles
+
+```
+📂 Text Styles (in Figma)
+├── Heading 1 / Inter / 32px
+├── Heading 2 / Inter / 28px
+├── Body / Inter / 14px
+├── Caption / Inter / 11px
+└── ...
+```
+
+### 3. Effect Styles (Shadows)
+
+```
+📂 Effect Styles (in Figma)
+├── Shadow / Small
+├── Shadow / Medium
+├── Shadow / Large
+└── ...
+```
+
+### 4. Variables (Spacing, Radius)
+
+```
+📂 Variables (in Figma)
+├── Spacing / XS (4px)
+├── Spacing / SM (8px)
+├── Spacing / MD (16px)
+├── Border Radius / SM (4px)
+└── ...
+```
+
+---
+
+## Best Practices
+
+<AccordionGroup>
+  <Accordion title="Use Semantic Color Names">
+    Define colors by purpose (`primary`, `error`) rather than appearance (`blue`, `red`) to maintain flexibility.
+  </Accordion>
+  
+  <Accordion title="Maintain Consistent Spacing Scale">
+    Use a consistent base unit (4px or 8px) and scale factor throughout your design system.
+  </Accordion>
+  
+  <Accordion title="Test Color Contrast">
+    Ensure text colors meet WCAG AA standards (4.5:1 for normal text, 3:1 for large text).
+  </Accordion>
+  
+  <Accordion title="Document Custom Tokens">
+    When using `design_system: custom`, create comprehensive documentation for all token values and their usage.
+  </Accordion>
+  
+  <Accordion title="Sync with Code Tokens">
+    Keep design tokens in sync with your frontend code tokens (CSS variables, Tailwind config, etc.) to reduce handoff friction.
+  </Accordion>
+  
+  <Accordion title="Version Control Tokens">
+    Commit `.omni-architect.yml` to version control so design tokens evolve with your codebase.
+  </Accordion>
+</AccordionGroup>
+
+---
+
+## Troubleshooting
+
+### Invalid Color Format
+
+**Error**: `Invalid color format for 'primary'`
+
+**Solution**: Use hex (#4A90D9), rgb(), rgba(), hsl(), or hsla() formats:
+```yaml
+colors:
+  primary: "#4A90D9"  # ✓ Correct
+  # primary: "blue"  # ✗ Invalid
+```
+
+### Font Not Available in Figma
+
+**Warning**: `Font 'CustomFont' not found in Figma, falling back to 'Inter'`
+
+**Solution**: Ensure the font is installed in Figma or use a standard font:
+```yaml
+typography:
+  font_family: "Inter"  # ✓ Available in Figma
+  # font_family: "MyCustomFont"  # ✗ Not in Figma
+```
+
+### Spacing Scale Not Applied
+
+**Issue**: Components don't follow spacing scale
+
+**Solution**: Verify `base` and `scale` are numbers (not strings):
+```yaml
+spacing:
+  base: 8      # ✓ Correct (number)
+  # base: "8"  # ✗ Invalid (string)
+  scale: 1.5   # ✓ Correct
+```
+
+---
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Design Systems" icon="palette" href="/configuration/design-systems">
+    Choose the right base design system for your project
+  </Card>
+  <Card title="Hooks" icon="webhook" href="/configuration/hooks">
+    Automate actions when Figma generation completes
+  </Card>
+</CardGroup>

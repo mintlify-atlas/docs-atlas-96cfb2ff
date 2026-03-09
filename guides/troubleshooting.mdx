@@ -1,0 +1,697 @@
+---
+title: Troubleshooting
+description: Common issues and solutions when using Omni Architect
+---
+
+# Troubleshooting
+
+This guide covers common issues you may encounter when using Omni Architect and how to resolve them.
+
+## Pipeline Issues
+
+<Accordion title="PRD parsing failed">
+  **Error Message:**
+  ```
+  Error: PRD parsing failed - unable to extract semantic structure
+  ```
+  
+  **Cause:** Your PRD doesn't follow expected Markdown structure or is missing key sections.
+  
+  **Solutions:**
+  
+  1. **Verify Markdown structure**
+     - Use H1 (`#`) for project name
+     - Use H2 (`##`) for features
+     - Use H3 (`###`) for subsections (User Stories, Flows, etc.)
+     
+  2. **Check for required sections**
+     - At least one feature section
+     - User stories or flows
+     - Some form of requirements or acceptance criteria
+     
+  3. **Validate Markdown syntax**
+     ```bash
+     # Check for common Markdown errors
+     npx remark-cli prd.md --use remark-lint
+     ```
+  
+  4. **Review parsing heuristics**
+     - Use "Como...quero...para" or "As a...I want...so that" for user stories
+     - Use tables for entity definitions
+     - Use numbered lists for flows
+     
+  See [Writing PRDs](/guides/writing-prds) for detailed guidance.
+</Accordion>
+
+<Accordion title="Mermaid syntax error">
+  **Error Message:**
+  ```
+  Error: Mermaid diagram generation failed - syntax error in flowchart
+  Line 5: Unexpected character '['
+  ```
+  
+  **Cause:** Special characters in your PRD text broke Mermaid syntax generation.
+  
+  **Solutions:**
+  
+  1. **Escape special characters in PRD**
+     - Avoid brackets `[]` in feature names (Mermaid uses them for node shapes)
+     - Avoid quotes `"` in flow descriptions (use single quotes `'` instead)
+     - Avoid pipes `|` in entity names (reserved for Mermaid tables)
+     
+  2. **Check PRD for problematic patterns**
+     ```markdown
+     ❌ ## Feature: Shopping Cart [Priority: High]
+     ✅ ## Feature: Shopping Cart (Priority: High)
+     
+     ❌ User enters "email address"
+     ✅ User enters email address
+     ```
+  
+  3. **Use auto-retry**
+     Omni Architect automatically retries with syntax corrections (max 3 attempts). If it fails after 3 retries, manual PRD cleanup is needed.
+     
+  4. **Validate diagrams manually**
+     ```bash
+     # Test Mermaid syntax in browser
+     open https://mermaid.live
+     # Paste the generated diagram code
+     ```
+</Accordion>
+
+<Accordion title="Figma API 403 Forbidden">
+  **Error Message:**
+  ```
+  Error: Figma API returned 403 Forbidden
+  Unable to write to file abc123XYZ
+  ```
+  
+  **Cause:** Your Figma access token doesn't have permission to edit the file.
+  
+  **Solutions:**
+  
+  1. **Verify token is valid**
+     ```bash
+     # Test token with curl
+     curl -H "X-Figma-Token: $FIGMA_TOKEN" \
+       "https://api.figma.com/v1/me"
+     ```
+     Expected: `{"id": "...", "email": "...", ...}`
+     
+  2. **Check file access**
+     - Open the file in Figma
+     - Verify you can edit objects (not view-only)
+     - If it's a team file, ensure you're an Editor or Admin
+     
+  3. **Regenerate token**
+     - Go to **Figma Settings → Personal Access Tokens**
+     - Delete old token
+     - Generate new token
+     - Update environment variable
+     
+  4. **Verify file key**
+     ```bash
+     # Extract file key from URL
+     # URL: https://figma.com/file/abc123XYZ/My-File
+     # Key: abc123XYZ
+     ```
+     
+  See [Figma Setup](/guides/figma-setup) for detailed token configuration.
+</Accordion>
+
+<Accordion title="Low coverage score (< 0.6)">
+  **Error Message:**
+  ```
+  Warning: PRD completeness score is 0.52
+  Many features are missing details. Diagram quality will be affected.
+  ```
+  
+  **Cause:** Your PRD is incomplete or lacks structured information.
+  
+  **Solutions:**
+  
+  1. **Add missing features**
+     Ensure each feature has:
+     - Clear name and description
+     - Priority (High/Medium/Low)
+     - User stories or flows
+     - Acceptance criteria
+     
+  2. **Define entities**
+     ```markdown
+     ### Entity: User
+     
+     | Attribute | Type   | Description |
+     |-----------|--------|-------------|
+     | id        | uuid   | Primary key |
+     | email     | string | User email  |
+     ```
+     
+  3. **Document flows**
+     ```markdown
+     ### Flow: Checkout
+     
+     1. User views cart
+     2. User clicks "Checkout"
+     3. System validates cart
+        - If valid → Continue
+        - If invalid → Show error
+     4. User enters payment details
+     5. System processes payment
+     ```
+     
+  4. **Review completeness report**
+     The parser will list specific missing elements:
+     ```
+     Missing:
+     - Feature priorities (3/10 features)
+     - Entity definitions (0 entities found)
+     - Flow documentation (2/10 features have flows)
+     ```
+     
+  See [Writing PRDs](/guides/writing-prds#completeness-score) for scoring details.
+</Accordion>
+
+<Accordion title="Diagrams not matching PRD expectations">
+  **Problem:** Generated diagrams don't reflect your PRD as expected.
+  
+  **Cause:** Parser misinterpreted ambiguous or unstructured PRD text.
+  
+  **Solutions:**
+  
+  1. **Use interactive validation mode**
+     ```bash
+     --validation_mode "interactive"
+     ```
+     Review each diagram and provide specific feedback for regeneration.
+     
+  2. **Be explicit in PRD**
+     ❌ Vague:
+     ```markdown
+     Users can buy products
+     ```
+     
+     ✅ Explicit:
+     ```markdown
+     ### Flow: Purchase Product
+     
+     1. User searches for product
+     2. User adds product to cart
+     3. User proceeds to checkout
+     4. User completes payment
+     5. System creates order
+     ```
+     
+  3. **Use standard patterns**
+     - User stories: "As a [persona], I want [capability], so that [benefit]"
+     - Flows: Numbered steps with decision points
+     - Entities: Tables with attributes
+     
+  4. **Check entity consistency**
+     Use the same entity names throughout:
+     ```markdown
+     ❌ User in one section, Customer in another
+     ✅ User consistently everywhere
+     ```
+</Accordion>
+
+<Accordion title="Rate limit exceeded (429)">
+  **Error Message:**
+  ```
+  Error: Figma API rate limit exceeded (429)
+  Please wait 60 seconds and retry
+  ```
+  
+  **Cause:** Too many API requests to Figma in a short time.
+  
+  **Solutions:**
+  
+  1. **Wait and retry**
+     Omni Architect uses exponential backoff automatically:
+     - 1st retry: 1 second
+     - 2nd retry: 2 seconds
+     - 3rd retry: 4 seconds
+     - 4th retry: 8 seconds
+     - Max: 5 retries
+     
+  2. **For very large PRDs**
+     Split into smaller modules:
+     ```bash
+     # Process by feature
+     skills run omni-architect --prd_source "./prd-auth.md"
+     skills run omni-architect --prd_source "./prd-catalog.md"
+     skills run omni-architect --prd_source "./prd-checkout.md"
+     ```
+     
+  3. **Use Figma service account (teams)**
+     Service accounts have higher rate limits:
+     - Personal token: 60 requests/minute
+     - Service account: 300 requests/minute
+     
+  4. **Schedule runs during off-peak**
+     If running in CI/CD, schedule during low-traffic hours.
+</Accordion>
+
+<Accordion title="Timeout on large PRD">
+  **Error Message:**
+  ```
+  Error: Operation timed out after 300 seconds
+  PRD size: 50,000 words
+  ```
+  
+  **Cause:** PRD is too large to process in one pipeline run.
+  
+  **Solutions:**
+  
+  1. **Divide PRD by module**
+     ```markdown
+     # Main PRD: prd-main.md
+     Links to:
+     - prd-auth.md (Authentication module)
+     - prd-catalog.md (Product catalog module)
+     - prd-checkout.md (Checkout module)
+     ```
+     
+  2. **Process incrementally**
+     ```bash
+     # Process each module separately
+     for module in auth catalog checkout; do
+       skills run omni-architect \
+         --prd_source "./prd-${module}.md" \
+         --project_name "MyApp - ${module}"
+     done
+     ```
+     
+  3. **Reduce diagram types**
+     Generate fewer diagram types per run:
+     ```bash
+     # First run: flowcharts and ER diagrams
+     --diagram_types '["flowchart","erDiagram"]'
+     
+     # Second run: sequence and state diagrams
+     --diagram_types '["sequence","stateDiagram"]'
+     ```
+     
+  4. **Use auto validation**
+     Interactive mode adds human review time. Use auto mode for large PRDs:
+     ```bash
+     --validation_mode "auto" --validation_threshold 0.85
+     ```
+</Accordion>
+
+---
+
+## Configuration Issues
+
+<Accordion title="Token not found in environment">
+  **Error Message:**
+  ```
+  Error: FIGMA_TOKEN environment variable not set
+  ```
+  
+  **Cause:** Figma token not configured in shell environment.
+  
+  **Solutions:**
+  
+  1. **Set in current shell**
+     ```bash
+     export FIGMA_TOKEN="figd_your_token_here"
+     ```
+     
+  2. **Persist in shell config**
+     ```bash
+     # Bash
+     echo 'export FIGMA_TOKEN="figd_your_token_here"' >> ~/.bashrc
+     source ~/.bashrc
+     
+     # Zsh
+     echo 'export FIGMA_TOKEN="figd_your_token_here"' >> ~/.zshrc
+     source ~/.zshrc
+     ```
+     
+  3. **Use .env file (local dev)**
+     ```bash
+     # Create .env
+     echo 'FIGMA_TOKEN=figd_your_token_here' > .env
+     
+     # Load before running
+     source .env && skills run omni-architect ...
+     ```
+     
+  4. **Pass directly (not recommended for production)**
+     ```bash
+     skills run omni-architect \
+       --figma_access_token "figd_your_token_here"
+     ```
+</Accordion>
+
+<Accordion title="Config file not being read">
+  **Problem:** `.omni-architect.yml` exists but settings aren't applied.
+  
+  **Cause:** File in wrong location or YAML syntax error.
+  
+  **Solutions:**
+  
+  1. **Verify file location**
+     Config file must be in project root (where you run the command):
+     ```bash
+     ls -la .omni-architect.yml
+     ```
+     
+  2. **Validate YAML syntax**
+     ```bash
+     # Install yamllint
+     pip install yamllint
+     
+     # Validate config
+     yamllint .omni-architect.yml
+     ```
+     
+  3. **Check indentation**
+     YAML is whitespace-sensitive:
+     ```yaml
+     ❌ Bad:
+     design_tokens:
+     colors:
+       primary: "#4A90D9"
+     
+     ✅ Good:
+     design_tokens:
+       colors:
+         primary: "#4A90D9"
+     ```
+     
+  4. **Verify config is loaded**
+     Omni Architect prints loaded config on startup:
+     ```
+     ✓ Config loaded from .omni-architect.yml
+     Project: My Project
+     Design System: material-3
+     Validation Mode: interactive
+     ```
+</Accordion>
+
+<Accordion title="Custom design tokens not applying">
+  **Problem:** Custom colors/fonts defined but not visible in Figma output.
+  
+  **Cause:** Design system not set to `"custom"` or tokens have errors.
+  
+  **Solutions:**
+  
+  1. **Set design_system to custom**
+     ```yaml
+     design_system: "custom"  # Not "material-3" or others
+     design_tokens:
+       colors:
+         primary: "#4A90D9"
+     ```
+     
+  2. **Validate color formats**
+     ```yaml
+     ❌ Bad:
+     colors:
+       primary: "4A90D9"  # Missing #
+       secondary: "rgb(74, 144, 217"  # Missing )
+     
+     ✅ Good:
+     colors:
+       primary: "#4A90D9"
+       secondary: "rgb(74, 144, 217)"
+     ```
+     
+  3. **Check font availability**
+     ```
+     ⚠ Warning: Font 'CustomFont' not found in Figma
+       Falling back to 'Inter'
+     ```
+     Solution: Install font in Figma or use available font.
+     
+  4. **Review token validation report**
+     Omni Architect prints token validation on startup:
+     ```
+     ✓ Colors: 12 tokens
+     ✗ Typography: Font 'CustomFont' unavailable
+     ✓ Spacing: 7 scales
+     ```
+     
+  See [Custom Design Systems](/guides/custom-design-systems) for configuration details.
+</Accordion>
+
+---
+
+## Diagram Quality Issues
+
+<Accordion title="Inconsistent entity names across diagrams">
+  **Problem:** Entity named "User" in ER Diagram but "Customer" in Sequence Diagram.
+  
+  **Cause:** Inconsistent naming in PRD.
+  
+  **Solutions:**
+  
+  1. **Use consistent names in PRD**
+     Search and replace:
+     ```bash
+     # Find all entity references
+     grep -n "Customer\|User" prd.md
+     
+     # Standardize to one name
+     sed -i 's/Customer/User/g' prd.md
+     ```
+     
+  2. **Review validation report**
+     ```json
+     "naming_coherence": {
+       "score": 0.75,
+       "issues": ["'User' vs 'Customer' in 3 diagrams"]
+     }
+     ```
+     
+  3. **Use interactive validation**
+     When prompted, select `[m]odify` and provide feedback:
+     ```
+     Feedback: Use 'User' consistently instead of 'Customer'
+     ```
+</Accordion>
+
+<Accordion title="Missing error paths (sad paths)">
+  **Problem:** Validation report shows low completeness score due to missing error scenarios.
+  
+  **Cause:** PRD only documents happy path.
+  
+  **Solutions:**
+  
+  1. **Document all paths explicitly**
+     ```markdown
+     ### Flow: User Login
+     
+     1. User enters email and password
+     2. System validates credentials
+        **Happy path:**
+        - If valid → Generate JWT token, redirect to dashboard
+        
+        **Sad paths:**
+        - If invalid credentials → Show "Invalid email or password"
+        - If account locked → Show "Too many attempts, try again in 30 min"
+        - If email not verified → Show "Please verify your email first"
+     3. System logs authentication event
+     ```
+     
+  2. **Use decision point syntax**
+     ```markdown
+     3. System processes payment
+        - If approved → Create order (go to step 4)
+        - If declined → Show error, return to step 2
+        - If timeout → Retry (max 3 times), then show error
+     ```
+     
+  3. **Include exception handling**
+     ```markdown
+     ### Exceptions
+     - Network timeout: Retry with exponential backoff
+     - Invalid input: Show validation error inline
+     - Server error: Show generic error message
+     ```
+</Accordion>
+
+<Accordion title="Low traceability score">
+  **Problem:** Validation report shows user stories aren't mapped to diagrams.
+  
+  **Cause:** No explicit linkage between stories and flows.
+  
+  **Solutions:**
+  
+  1. **Reference stories in flows**
+     ```markdown
+     ## Checkout Flow
+     
+     **Implements:** US003, US007, US012
+     
+     1. User views cart (US003)
+     2. User selects shipping (US007)
+     3. User completes payment (US012)
+     ```
+     
+  2. **Use story IDs consistently**
+     ```markdown
+     ### User Story US003
+     As a shopper, I want to view my cart...
+     
+     ### Acceptance Criteria (US003)
+     - [ ] Cart shows all items
+     - [ ] Cart updates in real-time
+     ```
+     
+  3. **Cross-reference in acceptance criteria**
+     ```markdown
+     ### Acceptance Criteria
+     - [ ] **US003**: Cart displays correctly
+     - [ ] **US007**: Shipping calculation is accurate
+     - [ ] **US012**: Payment processes securely
+     ```
+</Accordion>
+
+---
+
+## CI/CD Integration Issues
+
+<Accordion title="Token not available in CI/CD">
+  **Problem:** Pipeline works locally but fails in CI/CD with token error.
+  
+  **Cause:** Token not configured in CI/CD secrets.
+  
+  **Solutions:**
+  
+  1. **GitHub Actions**
+     Add to repository secrets:
+     - **Settings → Secrets and variables → Actions → New repository secret**
+     - Name: `FIGMA_TOKEN`
+     - Value: `figd_your_token_here`
+     
+     Use in workflow:
+     ```yaml
+     - name: Run Omni Architect
+       env:
+         FIGMA_TOKEN: ${{ secrets.FIGMA_TOKEN }}
+       run: |
+         skills run omni-architect \
+           --figma_access_token "$FIGMA_TOKEN"
+     ```
+     
+  2. **GitLab CI**
+     Add to project variables:
+     - **Settings → CI/CD → Variables → Add variable**
+     - Key: `FIGMA_TOKEN`
+     - Value: `figd_your_token_here`
+     - Protected: Yes
+     - Masked: Yes
+     
+     Use in `.gitlab-ci.yml`:
+     ```yaml
+     validate:
+       script:
+         - skills run omni-architect --figma_access_token "$FIGMA_TOKEN"
+     ```
+     
+  3. **Other CI systems**
+     Consult your CI provider's documentation for secrets management.
+</Accordion>
+
+<Accordion title="Pipeline succeeds but no Figma assets visible">
+  **Problem:** CI/CD reports success, but nothing appears in Figma.
+  
+  **Cause:** Wrong file key or Figma file was deleted.
+  
+  **Solutions:**
+  
+  1. **Verify file still exists**
+     Open the Figma file URL manually
+     
+  2. **Check file key in logs**
+     ```
+     ✓ Connected to Figma file: abc123XYZ
+     ✓ Created page: My Project - Omni Architect
+     ```
+     
+  3. **Look for new page in Figma**
+     The assets are in a new page, not the existing pages:
+     - Open Figma file
+     - Check pages sidebar (left)
+     - Look for "{project_name} - Omni Architect"
+     
+  4. **Review orchestration log**
+     ```bash
+     cat .omni-architect/orchestration-log.json
+     ```
+     Check `figma_assets` array for node IDs and URLs.
+</Accordion>
+
+---
+
+## Getting Help
+
+If you're still stuck after trying these solutions:
+
+### 1. Check the Orchestration Log
+
+Omni Architect writes a detailed log to `.omni-architect/orchestration-log.json`:
+
+```bash
+cat .omni-architect/orchestration-log.json | jq
+```
+
+Look for:
+- `errors`: Specific error messages
+- `warnings`: Non-blocking issues
+- `phase_durations`: Which phase took longest or failed
+- `validation_report`: Detailed score breakdown
+
+### 2. Enable Debug Mode
+
+```bash
+skills run omni-architect \
+  --debug \
+  --verbose
+```
+
+This prints detailed logs for each phase:
+- PRD parsing decisions
+- Mermaid generation attempts
+- Validation score calculations
+- Figma API requests and responses
+
+### 3. Export Validation Report
+
+```bash
+skills run omni-architect \
+  --validation_mode "batch"
+
+# When prompted, press [e] to export
+# Report saved to: .omni-architect/validation-report.json
+```
+
+Share this report when asking for help.
+
+### 4. File an Issue
+
+If you've found a bug or need assistance:
+
+1. **GitHub Issues**: [github.com/fabioeloi/omni-architect/issues](https://github.com/fabioeloi/omni-architect/issues)
+2. **Include**:
+   - Omni Architect version (`skills --version`)
+   - Command used (redact tokens!)
+   - Error message or unexpected behavior
+   - Orchestration log (if applicable)
+   - PRD sample (if possible)
+
+---
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Writing PRDs" icon="pen" href="/guides/writing-prds">
+    Learn PRD best practices to avoid issues
+  </Card>
+  <Card title="Validation Workflow" icon="check" href="/guides/validation-workflow">
+    Master validation modes for better results
+  </Card>
+</CardGroup>

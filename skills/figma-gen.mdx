@@ -1,0 +1,477 @@
+---
+title: 'Figma Generator'
+description: 'Generates design assets in Figma from validated Mermaid diagrams'
+---
+
+# Figma Generator
+
+The **Figma Generator** is Phase 4 of the Omni Architect pipeline. After diagrams pass validation, this skill creates professional design assets in Figma, transforming validated logic into visual artifacts organized by diagram type and design system.
+
+## Purpose
+
+Automatically generates Figma assets from validated Mermaid diagrams:
+
+- **User Flow Pages** from flowcharts
+- **Interaction Spec Components** from sequence diagrams
+- **Data Model Documentation** from ER diagrams
+- **State Management Visualizations** from state diagrams
+- **Architecture Overview Pages** from C4 Context diagrams
+- **User Journey Map Frames** from journey diagrams
+
+All assets are styled according to your chosen design system (Material 3, Apple HIG, Tailwind, etc.) and organized in a structured Figma file ready for handoff.
+
+## Inputs
+
+<ParamField path="diagrams" type="array" required>
+  Array of validated diagrams from Phase 3 (Logic Validator) with `status=approved`. Each diagram must include `type`, `code`, `source_features`, and `metadata`.
+</ParamField>
+
+<ParamField path="figma_file_key" type="string" required>
+  The Figma file key where assets will be created. Extract from Figma URL:
+  `https://www.figma.com/file/<FILE_KEY>/...`
+  
+  Example: `abc123XYZ`
+</ParamField>
+
+<ParamField path="figma_access_token" type="string" required>
+  Personal access token for Figma API with write permissions. Generate at:
+  [https://www.figma.com/developers/api#access-tokens](https://www.figma.com/developers/api#access-tokens)
+  
+  <Warning>
+  Never commit tokens to version control. Use environment variables:
+  ```bash
+  export FIGMA_TOKEN="your-token-here"
+  --figma_access_token "$FIGMA_TOKEN"
+  ```
+  </Warning>
+</ParamField>
+
+<ParamField path="design_system" type="string" default="material-3">
+  Base design system for styling assets. Supported values:
+  - `material-3` - Google Material Design 3
+  - `apple-hig` - Apple Human Interface Guidelines
+  - `tailwind` - Tailwind CSS design tokens
+  - `custom` - Use custom tokens from config file
+</ParamField>
+
+<ParamField path="project_name" type="string" required>
+  Project name used for organizing Figma pages and frames. Example: "E-Commerce Platform"
+</ParamField>
+
+## Outputs
+
+<ResponseField name="figma_assets" type="array">
+  Array of created Figma asset objects.
+  
+  **Structure:**
+  ```json
+  [
+    {
+      "node_id": "string (Figma node ID)",
+      "type": "page|frame|component",
+      "name": "string",
+      "diagram_type": "flowchart|sequence|erDiagram|etc",
+      "preview_url": "string (thumbnail URL)",
+      "figma_url": "string (direct link)",
+      "created_at": "ISO timestamp",
+      "metadata": {
+        "design_system": "string",
+        "source_features": ["string"],
+        "node_count": "number"
+      }
+    }
+  ]
+  ```
+</ResponseField>
+
+## Diagram to Asset Mapping
+
+| Mermaid Diagram Type | Figma Asset Type | Description |
+|---------------------|------------------|-------------|
+| `flowchart` | User Flow Page | Wireframe-style flow with connected screens and decision points |
+| `sequenceDiagram` | Interaction Spec Component | Vertical timeline showing actor-system interactions |
+| `erDiagram` | Data Model Documentation | Entity boxes with relationships and attribute tables |
+| `stateDiagram` | State Management Component | State bubbles with transition arrows and annotations |
+| `C4Context` | Architecture Overview Page | System context with external dependencies and boundaries |
+| `journey` | User Journey Map Frame | Horizontal journey with touchpoints and emotions |
+| `gantt` | Timeline Frame | Project timeline with milestones and dependencies |
+
+## Generation Process
+
+The generator follows a 9-step process for each validated diagram:
+
+### 1. API Connection
+```javascript
+Connect to Figma REST API v1
+Authenticate using figma_access_token
+Verify write access to figma_file_key
+```
+
+### 2. Page Creation/Location
+```javascript
+Search for existing page: "{project_name} - Omni Architect"
+If not found: Create new page
+Organize sub-pages by diagram type:
+  - User Flows
+  - Interaction Specs
+  - Data Model
+  - Architecture
+  - User Journeys
+```
+
+### 3. Frame Creation
+```javascript
+Create main Frame with auto-layout
+Apply naming: "{diagram_type}: {feature_name}"
+Set frame size based on diagram complexity
+```
+
+### 4. Node Mapping
+```javascript
+Parse Mermaid diagram code
+Extract nodes, edges, and labels
+Map each Mermaid node to Figma component:
+  - flowchart node → Rectangle with rounded corners
+  - sequence participant → Rectangle with header
+  - entity → Table-style frame
+  - state → Circle or rounded rectangle
+```
+
+### 5. Design Token Application
+```javascript
+Load design_system tokens (colors, typography, spacing)
+Apply to components:
+  - Primary color: Action nodes
+  - Secondary color: Decision nodes
+  - Success: Completion states
+  - Error: Error paths
+  - Neutral: Standard nodes
+
+Typography:
+  - Heading: Node labels
+  - Body: Descriptions
+  - Caption: Metadata
+
+Spacing:
+  - Padding: base × 2
+  - Gap: base × 1.5
+  - Margin: base × 3
+```
+
+### 6. Connection Creation
+```javascript
+For each edge in diagram:
+  Create arrow/line between nodes
+  Style based on edge type:
+    - Solid: Normal flow
+    - Dashed: Alternative path
+    - Thick: Primary path
+  Add labels on connections
+```
+
+### 7. Responsive Variants
+```javascript
+If applicable (e.g., user flows):
+  Create variants for:
+    - Desktop (1440px)
+    - Tablet (768px)
+    - Mobile (375px)
+  Adjust layout and spacing per breakpoint
+```
+
+### 8. Development Annotations
+```javascript
+Add annotation layer with:
+  - Feature IDs from source_features
+  - User story references
+  - Technical notes
+  - Implementation hints
+Style: Semi-transparent, non-printable layer
+```
+
+### 9. Metadata Registration
+```javascript
+Capture created node_id
+Generate preview_url (thumbnail)
+Construct figma_url (direct link)
+Store in figma_assets output array
+```
+
+## Generated Figma Structure
+
+The generator creates a well-organized file structure:
+
+```
+📁 {project_name} - Omni Architect
+│
+├── 📄 Index
+│   └── 🖼️ Navigation Frame (links to all pages)
+│
+├── 📄 User Flows
+│   ├── 🖼️ Flow: User Authentication
+│   ├── 🖼️ Flow: Product Search
+│   ├── 🖼️ Flow: Checkout Process
+│   └── 🖼️ Flow: Order Management
+│
+├── 📄 Interaction Specs
+│   ├── 🖼️ Sequence: User Registration
+│   ├── 🖼️ Sequence: Checkout Process
+│   └── 🖼️ Sequence: Password Reset
+│
+├── 📄 Data Model
+│   └── 🖼️ ER: Domain Model
+│       ├── Entity: User
+│       ├── Entity: Order
+│       ├── Entity: Product
+│       └── Relationships
+│
+├── 📄 Architecture
+│   └── 🖼️ C4: System Context
+│       ├── System: Web App
+│       ├── System: Mobile App
+│       ├── External: Payment Gateway
+│       └── External: Email Service
+│
+├── 📄 User Journeys
+│   ├── 🖼️ Journey: New User Onboarding
+│   └── 🖼️ Journey: Returning Customer
+│
+└── 📄 Component Library
+    ├── 🧩 Design Tokens
+    │   ├── Colors
+    │   ├── Typography
+    │   └── Spacing
+    ├── 🧩 Flow Connectors
+    │   ├── Arrow (solid)
+    │   ├── Arrow (dashed)
+    │   └── Decision diamond
+    └── 🧩 Annotation Components
+        ├── Feature tag
+        ├── Story reference
+        └── Dev note
+```
+
+## Design System Tokens
+
+Default token values by design system:
+
+### Material 3
+```json
+{
+  "colors": {
+    "primary": "#6750A4",
+    "secondary": "#625B71",
+    "success": "#2ECC71",
+    "error": "#B3261E",
+    "warning": "#FFA500",
+    "background": "#FFFBFE",
+    "surface": "#FEF7FF"
+  },
+  "typography": {
+    "font_family": "Roboto",
+    "heading_size": 24,
+    "body_size": 14,
+    "caption_size": 12
+  },
+  "spacing": {
+    "base": 8,
+    "scale": 1.5
+  },
+  "border_radius": {
+    "small": 4,
+    "medium": 8,
+    "large": 12
+  }
+}
+```
+
+### Apple HIG
+```json
+{
+  "colors": {
+    "primary": "#007AFF",
+    "secondary": "#5856D6",
+    "success": "#34C759",
+    "error": "#FF3B30",
+    "warning": "#FF9500",
+    "background": "#FFFFFF",
+    "surface": "#F2F2F7"
+  },
+  "typography": {
+    "font_family": "SF Pro",
+    "heading_size": 28,
+    "body_size": 17,
+    "caption_size": 13
+  },
+  "spacing": {
+    "base": 8,
+    "scale": 2
+  },
+  "border_radius": {
+    "small": 8,
+    "medium": 10,
+    "large": 12
+  }
+}
+```
+
+### Tailwind
+```json
+{
+  "colors": {
+    "primary": "#3B82F6",
+    "secondary": "#8B5CF6",
+    "success": "#10B981",
+    "error": "#EF4444",
+    "warning": "#F59E0B",
+    "background": "#FFFFFF",
+    "surface": "#F9FAFB"
+  },
+  "typography": {
+    "font_family": "Inter",
+    "heading_size": 24,
+    "body_size": 16,
+    "caption_size": 14
+  },
+  "spacing": {
+    "base": 4,
+    "scale": 1.25
+  },
+  "border_radius": {
+    "small": 4,
+    "medium": 6,
+    "large": 8
+  }
+}
+```
+
+## Rate Limiting & Performance
+
+The Figma API has rate limits. The generator implements:
+
+### Exponential Backoff
+```
+Attempt 1: immediate
+Attempt 2: wait 1s
+Attempt 3: wait 2s
+Attempt 4: wait 4s
+Attempt 5: wait 8s
+Max retries: 5
+```
+
+### Batch Creation
+```javascript
+Group multiple nodes into single API calls
+Create components in parallel where possible
+Cache design tokens and reusable components
+```
+
+### Component Reuse
+```javascript
+Create component library first
+Reuse components across frames
+Avoids duplicate creation API calls
+```
+
+## Example Output
+
+```json
+[
+  {
+    "node_id": "123:456",
+    "type": "frame",
+    "name": "Flow: Checkout Process",
+    "diagram_type": "flowchart",
+    "preview_url": "https://figma.com/thumbnail/abc123",
+    "figma_url": "https://figma.com/file/abc123?node-id=123:456",
+    "created_at": "2026-03-09T10:30:00Z",
+    "metadata": {
+      "design_system": "material-3",
+      "source_features": ["F002"],
+      "node_count": 11
+    }
+  },
+  {
+    "node_id": "789:012",
+    "type": "frame",
+    "name": "Sequence: User Registration",
+    "diagram_type": "sequence",
+    "preview_url": "https://figma.com/thumbnail/abc123-seq",
+    "figma_url": "https://figma.com/file/abc123?node-id=789:012",
+    "created_at": "2026-03-09T10:31:15Z",
+    "metadata": {
+      "design_system": "material-3",
+      "source_features": ["F001"],
+      "node_count": 6
+    }
+  },
+  {
+    "node_id": "345:678",
+    "type": "page",
+    "name": "Data Model",
+    "diagram_type": "erDiagram",
+    "preview_url": "https://figma.com/thumbnail/abc123-er",
+    "figma_url": "https://figma.com/file/abc123?node-id=345:678",
+    "created_at": "2026-03-09T10:32:30Z",
+    "metadata": {
+      "design_system": "material-3",
+      "source_features": ["F001", "F002", "F003"],
+      "node_count": 8
+    }
+  }
+]
+```
+
+## Best Practices
+
+### Organize Figma Files
+Create a dedicated file for each project or keep all Omni Architect outputs in one file with pages per project.
+
+### Use Team Libraries
+Publish generated components to team libraries for reuse across design files.
+
+### Review Before Sharing
+Generated assets are structured and annotated but may need designer polish before client presentations.
+
+### Leverage Dev Mode
+Figma's Dev Mode works seamlessly with generated annotations for developer handoff.
+
+### Customize Design Tokens
+Override default tokens in `.omni-architect.yml` to match your brand:
+```yaml
+design_tokens:
+  colors:
+    primary: "#FF6B6B"
+    secondary: "#4ECDC4"
+  typography:
+    font_family: "Poppins"
+```
+
+## Error Handling
+
+| Scenario | Behavior |
+|----------|----------|
+| Invalid figma_access_token | Error: "Figma API 401 Unauthorized. Check token." |
+| Token lacks write permissions | Error: "Figma API 403 Forbidden. Token needs write access." |
+| figma_file_key not found | Error: "Figma file not found. Verify FILE_KEY is correct." |
+| Rate limit exceeded | Exponential backoff, max 5 retries, then error |
+| Network timeout | Retry with progressive timeout (10s, 20s, 30s) |
+| Diagram too complex | Auto-split into multiple frames |
+| Unsupported diagram type | Skip with warning, continue with others |
+
+## Integration
+
+The Figma Generator runs automatically as Phase 4:
+
+```bash
+skills run omni-architect \
+  --prd_source "./docs/my-prd.md" \
+  --project_name "E-Commerce Platform" \
+  --figma_file_key "abc123XYZ" \
+  --figma_access_token "$FIGMA_TOKEN" \
+  --design_system "material-3" \
+  --validation_mode "auto" \
+  --validation_threshold 0.85
+```
+
+Generated assets are packaged in Phase 5 (Asset Delivery) with links and documentation.

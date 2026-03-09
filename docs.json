@@ -1,122 +1,124 @@
 {
   "$schema": "https://mintlify.com/docs.json",
-  "theme": "mint",
-  "name": "Mint Starter Kit",
+  "name": "Omni Architect",
+  "theme": "aspen",
   "colors": {
-    "primary": "#16A34A",
-    "light": "#07C983",
-    "dark": "#15803D"
+    "primary": "#848c8e",
+    "light": "#11161e",
+    "dark": "#cfd0d2"
   },
-  "favicon": "/favicon.svg",
+  "favicon": "/favicon.jpg",
+  "logo": {
+    "light": "/logo.svg",
+    "dark": "/logo.svg"
+  },
+  "navbar": {
+    "primary": {
+      "type": "github",
+      "href": "https://github.com/fabioeloi/omni-architect"
+    }
+  },
+  "footer": {
+    "socials": {
+      "github": "https://github.com/fabioeloi/omni-architect"
+    }
+  },
   "navigation": {
     "tabs": [
       {
-        "tab": "Guides",
+        "tab": "Documentation",
         "groups": [
           {
-            "group": "Getting started",
+            "group": "Get Started",
             "pages": [
-              "index",
+              "introduction",
               "quickstart",
-              "development"
+              "installation"
             ]
           },
           {
-            "group": "Customization",
+            "group": "Core Concepts",
             "pages": [
-              "essentials/settings",
-              "essentials/navigation"
+              "concepts/overview",
+              "concepts/pipeline-architecture",
+              "concepts/skills-system",
+              "concepts/validation-scoring"
             ]
           },
           {
-            "group": "Writing content",
+            "group": "Pipeline Phases",
             "pages": [
-              "essentials/markdown",
-              "essentials/code",
-              "essentials/images",
-              "essentials/reusable-snippets"
+              "pipeline/prd-parser",
+              "pipeline/mermaid-generator",
+              "pipeline/logic-validator",
+              "pipeline/figma-generator",
+              "pipeline/asset-delivery"
             ]
           },
           {
-            "group": "AI tools",
+            "group": "Configuration",
             "pages": [
-              "ai-tools/cursor",
-              "ai-tools/claude-code",
-              "ai-tools/windsurf"
+              "configuration/overview",
+              "configuration/diagram-types",
+              "configuration/design-systems",
+              "configuration/validation-modes",
+              "configuration/design-tokens",
+              "configuration/hooks"
+            ]
+          },
+          {
+            "group": "Guides",
+            "pages": [
+              "guides/writing-prds",
+              "guides/validation-workflow",
+              "guides/figma-setup",
+              "guides/custom-design-systems",
+              "guides/troubleshooting"
             ]
           }
         ]
       },
       {
-        "tab": "API reference",
+        "tab": "Skills Reference",
         "groups": [
           {
-            "group": "API documentation",
+            "group": "Core Skills",
             "pages": [
-              "api-reference/introduction"
+              "skills/prd-parse",
+              "skills/mermaid-gen",
+              "skills/logic-validate",
+              "skills/figma-gen",
+              "skills/asset-deliver"
             ]
           },
           {
-            "group": "Endpoint examples",
+            "group": "Dependencies",
             "pages": [
-              "api-reference/endpoint/get",
-              "api-reference/endpoint/create",
-              "api-reference/endpoint/delete",
-              "api-reference/endpoint/webhook"
+              "skills/external-dependencies"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "Examples",
+        "groups": [
+          {
+            "group": "Use Cases",
+            "pages": [
+              "examples/ecommerce-platform",
+              "examples/saas-application",
+              "examples/mobile-app"
+            ]
+          },
+          {
+            "group": "Advanced",
+            "pages": [
+              "examples/custom-workflows",
+              "examples/cicd-integration"
             ]
           }
         ]
       }
-    ],
-    "global": {
-      "anchors": [
-        {
-          "anchor": "Documentation",
-          "href": "https://mintlify.com/docs",
-          "icon": "book-open-cover"
-        },
-        {
-          "anchor": "Blog",
-          "href": "https://mintlify.com/blog",
-          "icon": "newspaper"
-        }
-      ]
-    }
-  },
-  "logo": {
-    "light": "/logo/light.svg",
-    "dark": "/logo/dark.svg"
-  },
-  "navbar": {
-    "links": [
-      {
-        "label": "Support",
-        "href": "mailto:hi@mintlify.com"
-      }
-    ],
-    "primary": {
-      "type": "button",
-      "label": "Dashboard",
-      "href": "https://dashboard.mintlify.com"
-    }
-  },
-  "contextual": {
-    "options": [
-     "copy",
-     "view",
-     "chatgpt",
-     "claude",
-     "perplexity",
-     "mcp",
-     "cursor",
-     "vscode"
-   ]
-  },
-  "footer": {
-    "socials": {
-      "x": "https://x.com/mintlify",
-      "github": "https://github.com/mintlify",
-      "linkedin": "https://linkedin.com/company/mintlify"
-    }
+    ]
   }
 }
